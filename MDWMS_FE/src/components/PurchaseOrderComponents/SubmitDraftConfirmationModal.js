@@ -2,12 +2,12 @@ import React from 'react';
 import { X, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 
-const SubmitDraftConfirmationModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
+const SubmitDraftConfirmationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
   purchaseOrder,
-  loading = false 
+  loading = false
 }) => {
   const handleConfirm = () => {
     onConfirm();
@@ -30,7 +30,7 @@ const SubmitDraftConfirmationModal = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                {purchaseOrder?.status === 3 ? 'Nộp lại đơn hàng' : 'Nộp bản nháp'}
+                {purchaseOrder?.status === 3 ? 'Gửi lại đơn hàng' : 'Gửi phê duyệt'}
               </h3>
               <p className="text-sm text-gray-500">
                 {purchaseOrder?.status === 3 ? 'Gửi lại đơn hàng bị từ chối để chờ phê duyệt' : 'Gửi đơn hàng để chờ phê duyệt'}
@@ -82,12 +82,12 @@ const SubmitDraftConfirmationModal = ({
               <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div>
                 <h4 className="font-medium text-orange-800 mb-1">
-                  {purchaseOrder?.status === 3 ? 'Xác nhận nộp lại đơn hàng' : 'Xác nhận nộp bản nháp'}
+                  {purchaseOrder?.status === 3 ? 'Xác nhận gửi lại đơn hàng' : 'Xác nhận gửi bản nháp'}
                 </h4>
                 <p className="text-sm text-orange-700">
-                  {purchaseOrder?.status === 3 
-                    ? 'Bạn có chắc chắn muốn nộp lại đơn hàng bị từ chối này? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt lại trước khi có thể tiếp tục xử lý.'
-                    : 'Bạn có chắc chắn muốn nộp bản nháp này? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt trước khi có thể tiếp tục xử lý.'
+                  {purchaseOrder?.status === 3
+                    ? 'Bạn có chắc chắn muốn gửi lại đơn hàng bị từ chối này? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt lại trước khi có thể tiếp tục xử lý.'
+                    : 'Bạn có chắc chắn muốn gửi bản nháp này? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt trước khi có thể tiếp tục xử lý.'
                   }
                 </p>
               </div>
@@ -114,10 +114,10 @@ const SubmitDraftConfirmationModal = ({
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  {purchaseOrder?.status === 3 ? 'Đang nộp lại...' : 'Đang nộp...'}
+                  {purchaseOrder?.status === 3 ? 'Đang gửi lại...' : 'Đang gửi...'}
                 </div>
               ) : (
-                purchaseOrder?.status === 3 ? "Xác nhận nộp lại" : "Xác nhận nộp"
+                purchaseOrder?.status === 3 ? "Xác nhận gửi lại" : "Xác nhận gửi"
               )}
             </Button>
           </div>

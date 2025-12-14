@@ -134,7 +134,7 @@ export function PalletDetail({ palletId, onClose }) {
             <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h1 className="text-2xl font-bold text-slate-800">Chi tiết pallet</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Thông tin chi tiết pallet</h1>
                     <button
                         onClick={onClose}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -154,7 +154,6 @@ export function PalletDetail({ palletId, onClose }) {
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-slate-800">Pallet</h2>
-                                    <p className="text-slate-600 mt-1">Thông tin chi tiết pallet</p>
                                 </div>
                             </div>
                             <div className="flex items-center">
@@ -173,8 +172,8 @@ export function PalletDetail({ palletId, onClose }) {
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="qrcode" size={20} color="#3b82f6" />
                                     <div>
-                                        <p className="text-sm text-blue-600 font-medium">Mã pallet</p>
-                                        <p className="text-sm text-blue-800 font-semibold truncate">{truncateUuid(pallet.palletId)}</p>
+                                        <p className="text-sm text-blue-600 font-medium">Tên hàng hóa</p>
+                                        <p className="text-sm text-blue-800 font-medium">{pallet.goodsName}</p>
                                     </div>
                                 </div>
                             </div>
@@ -290,26 +289,7 @@ export function PalletDetail({ palletId, onClose }) {
                         </Card>
 
                         {/* Thông tin người tạo */}
-                        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-violet-50">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-3">
-                                    <div className="p-2 bg-purple-100 rounded-lg">
-                                        <ComponentIcon name="user" size={20} color="#8b5cf6" />
-                                    </div>
-                                    Thông tin người tạo
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                    <InfoRow
-                                        icon="user"
-                                        label="Người tạo"
-                                        value={pallet.createByName || "N/A"}
-                                        iconColor="#8b5cf6"
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
+
 
                         {/* Thông tin vị trí */}
                         <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -340,7 +320,7 @@ export function PalletDetail({ palletId, onClose }) {
                         </Card>
 
                         {/* Thông tin lô hàng */}
-                        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50">
+                        <Card className="lg:col-span-2 border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50">
                             <CardHeader className="pb-4">
                                 <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-3">
                                     <div className="p-2 bg-green-100 rounded-lg">
@@ -350,34 +330,50 @@ export function PalletDetail({ palletId, onClose }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="bg-white p-4 rounded-lg border border-green-200 space-y-3">
-                                    <InfoRow
-                                        icon="batch"
-                                        label="Mã lô hàng"
-                                        value={pallet.batchCode || "N/A"}
-                                        iconColor="#10b981"
-                                    />
-                                    <InfoRow
-                                        icon="package"
-                                        label="Tên hàng hóa"
-                                        value={pallet.goodsName || "N/A"}
-                                        iconColor="#10b981"
-                                    />
-                                    <InfoRow
-                                        icon="calendar"
-                                        label="Ngày sản xuất"
-                                        value={pallet.manufacturingDate ? new Date(pallet.manufacturingDate).toLocaleDateString('vi-VN') : "N/A"}
-                                        iconColor="#10b981"
-                                    />
-                                    <InfoRow
-                                        icon="calendar"
-                                        label="Ngày hết hạn"
-                                        value={pallet.expiryDate ? new Date(pallet.expiryDate).toLocaleDateString('vi-VN') : "N/A"}
-                                        iconColor="#10b981"
-                                    />
+                                <div className="bg-white p-4 rounded-lg border border-green-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Cột trái */}
+                                    <div className="space-y-3">
+                                        <InfoRow
+                                            icon="batch"
+                                            label="Mã lô hàng"
+                                            value={pallet.batchCode || "N/A"}
+                                            iconColor="#10b981"
+                                        />
+                                        <InfoRow
+                                            icon="package"
+                                            label="Tên hàng hóa"
+                                            value={pallet.goodsName || "N/A"}
+                                            iconColor="#10b981"
+                                        />
+                                    </div>
+
+                                    {/* Cột phải */}
+                                    <div className="space-y-3">
+                                        <InfoRow
+                                            icon="calendar"
+                                            label="Ngày sản xuất"
+                                            value={
+                                                pallet.manufacturingDate
+                                                    ? new Date(pallet.manufacturingDate).toLocaleDateString("vi-VN")
+                                                    : "N/A"
+                                            }
+                                            iconColor="#10b981"
+                                        />
+                                        <InfoRow
+                                            icon="calendar"
+                                            label="Ngày hết hạn"
+                                            value={
+                                                pallet.expiryDate
+                                                    ? new Date(pallet.expiryDate).toLocaleDateString("vi-VN")
+                                                    : "N/A"
+                                            }
+                                            iconColor="#10b981"
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
+
                     </div>
                 </div>
 
