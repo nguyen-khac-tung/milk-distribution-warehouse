@@ -82,12 +82,12 @@ const SubmitDraftConfirmationModal = ({
               <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div>
                 <h4 className="font-medium text-orange-800 mb-1">
-                  {purchaseOrder?.status === 3 ? 'Xác nhận gửi lại đơn hàng' : 'Xác nhận gửi bản nháp'}
+                  {purchaseOrder?.status === 3 ? 'Xác nhận gửi lại đơn hàng' : 'Xác nhận gửi phê duyệt'}
                 </h4>
                 <p className="text-sm text-orange-700">
                   {purchaseOrder?.status === 3
                     ? 'Bạn có chắc chắn muốn gửi lại đơn hàng bị từ chối này? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt lại trước khi có thể tiếp tục xử lý.'
-                    : 'Bạn có chắc chắn muốn gửi bản nháp này? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt trước khi có thể tiếp tục xử lý.'
+                    : 'Bạn có chắc chắn muốn gửi phê duyệt không? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt trước khi có thể tiếp tục xử lý.'
                   }
                 </p>
               </div>

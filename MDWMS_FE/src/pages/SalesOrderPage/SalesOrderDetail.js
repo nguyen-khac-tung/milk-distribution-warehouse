@@ -627,8 +627,9 @@ const SalesOrderDetail = () => {
                                 {canChangeExportDate() && (
                                     <Button
                                         onClick={() => setShowChangeDateModal(true)}
-                                        className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 h-[38px] px-8"
+                                        className="bg-blue-600 hover:bg-blue-500 text-white h-[38px] px-8"
                                     >
+                                        <Calendar className="h-4 w-4 mr-2" />
                                         Thay đổi ngày dự kiến xuất
                                     </Button>
                                 )}

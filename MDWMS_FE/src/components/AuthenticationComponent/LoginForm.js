@@ -54,7 +54,7 @@ export function LoginForm() {
     return (
         <div className="space-y-4">
             {/* Logo / Thương hiệu */}
-            <div className="space-y-0">
+            <div className="">
                 <div className="flex items-center">
                     <img
                         src="/logo.png"
@@ -70,7 +70,7 @@ export function LoginForm() {
                     Đăng nhập tài khoản
                 </h2>
 
-                <p className="text-muted-foreground leading-[1.2] m-0">
+                <p className="text-muted-foreground leading-[1.2] mt-3">
                     Nhập thông tin đăng nhập để truy cập vào không gian làm việc
                 </p>
             </div>
