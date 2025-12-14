@@ -246,9 +246,9 @@ namespace MilkDistributionWarehouse.Services
 
                 await _salesOrderRepository.UpdateSalesOrder(salesOrderExist);
 
-                await HandleShipmentDateChangeNotification(salesOrderExist);
-
                 await _unitOfWork.CommitTransactionAsync();
+
+                await HandleShipmentDateChangeNotification(salesOrderExist);
                 return ("", salesOrderUpdate);
             }
             catch
