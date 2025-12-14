@@ -751,7 +751,9 @@ export default function PurchaseOrderList() {
               { value: "6", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.AssignedForReceiving] },
               { value: "7", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Receiving] },
               { value: "8", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Inspected] },
-              { value: "9", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Completed] }
+              { value: "9", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Completed] },
+              { value: "10", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Ordered] },
+              { value: "11", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.AwaitingArrival] },
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
