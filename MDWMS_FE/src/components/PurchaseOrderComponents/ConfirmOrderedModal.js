@@ -49,11 +49,11 @@ const ConfirmOrderedModal = ({
         }
 
         // Lấy ngày đã chọn và giờ hiện tại
-        const selectedDate = new Date(estimatedTimeArrival);
+        const [year, month, day] = estimatedTimeArrival.split('-').map(Number);
         const now = new Date();
 
         // So sánh chỉ theo ngày (không tính giờ)
-        const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        const selectedDateOnly = new Date(year, month - 1, day);
         const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         if (selectedDateOnly < todayOnly) {
@@ -71,15 +71,16 @@ const ConfirmOrderedModal = ({
         const currentMilliseconds = now.getMilliseconds();
 
         // Tạo Date object với ngày đã chọn và giờ hiện tại
-        const finalDateTime = new Date(
-            selectedDate.getFullYear(),
-            selectedDate.getMonth(),
-            selectedDate.getDate(),
+        // Sử dụng Date.UTC để đảm bảo khi toISOString() được gọi, ngày giờ sẽ giữ nguyên giá trị đã chọn (giả lập UTC)
+        const finalDateTime = new Date(Date.UTC(
+            year,
+            month - 1,
+            day,
             currentHours,
             currentMinutes,
             currentSeconds,
             currentMilliseconds
-        );
+        ));
 
         // Convert to ISO string
         const isoString = finalDateTime.toISOString();
@@ -243,8 +244,8 @@ const ConfirmOrderedModal = ({
                             onClick={handleConfirm}
                             disabled={loading}
                             className={`h-[38px] px-8 font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${mode === 'change'
-                                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                                    : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                                ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                : 'bg-yellow-500 hover:bg-yellow-600 text-white'
                                 }`}
                         >
                             {loading ? (
