@@ -88,6 +88,16 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [Authorize(Roles = "Sales Representative")]
+        [HttpPut("UpdateSalesOrderShipmentDate")]
+        public async Task<IActionResult> UpdateSalesOrderShipmentDate(SalesOrderShipmentDateUpdateDto salesOrderUpdate)
+        {
+            var (msg, salesOrder) = await _salesOrderService.UpdateSalesOrderShipmentDate(salesOrderUpdate, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderShipmentDateUpdateDto>.ToResultOk(salesOrder);
+        }
+
+        [Authorize(Roles = "Sales Representative")]
         [HttpDelete("DeleteSalesOrder/{salesOrderId}")]
         public async Task<IActionResult> DeleteSalesOrder(string? salesOrderId)
         {
