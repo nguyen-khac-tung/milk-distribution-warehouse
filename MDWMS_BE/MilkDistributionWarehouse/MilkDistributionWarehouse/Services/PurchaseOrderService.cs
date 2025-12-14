@@ -752,7 +752,7 @@ namespace MilkDistributionWarehouse.Services
                         ? "Ngày giao hàng dự kiến thay đổi"
                         : "Đơn mua hàng đã được đặt";
                     var orderedContent = isEstimatedArrivalUpdated
-                        ? $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' vừa cập nhật thời gian giao hàng dự kiến."
+                        ? $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã đổi ngày giao sang ngày '{purchaseOrder.EstimatedTimeArrival:dd/MM/yyyy}'. Lý do: {purchaseOrder.DeliveryDateChangeReason}"
                         : $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã được đặt.";
                     var warehouseManagers = await _userRepository.GetUsersByRoleId(RoleType.WarehouseManager);
                     foreach (var warehouseManager in warehouseManagers)
