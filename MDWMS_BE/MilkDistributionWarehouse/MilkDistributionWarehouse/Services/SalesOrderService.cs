@@ -541,7 +541,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = manager.UserId,
                     Title = "Ngày giao hàng dự kiến thay đổi",
-                    Content = $"Đơn bán hàng bán '{salesOrder.SalesOrderId}' vừa cập nhật thời gian giao hàng dự kiến.",
+                    Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã đổi ngày giao sang ngày '{salesOrder.EstimatedTimeDeparture}'. Lý do: {salesOrder.ShipmentDateChangeReason}.",
                     EntityType = NotificationEntityType.SaleOrder,
                     EntityId = salesOrder.SalesOrderId
                 });
@@ -553,7 +553,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = manager.UserId,
                     Title = "Ngày giao hàng dự kiến thay đổi",
-                    Content = $"Đơn bán hàng bán '{salesOrder.SalesOrderId}' vừa cập nhật thời gian giao hàng dự kiến.",
+                    Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã đổi ngày giao sang ngày '{salesOrder.EstimatedTimeDeparture}'. Lý do: {salesOrder.ShipmentDateChangeReason}.",
                     EntityType = NotificationEntityType.SaleOrder,
                     EntityId = salesOrder.SalesOrderId
                 });
@@ -564,7 +564,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = salesOrder.AssignTo,
                     Title = "Ngày giao hàng dự kiến thay đổi",
-                    Content = $"Đơn bán hàng bán '{salesOrder.SalesOrderId}' vừa cập nhật thời gian giao hàng dự kiến.",
+                    Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' bạn đang phụ trách đã đổi ngày giao sang ngày '{salesOrder.EstimatedTimeDeparture}'. Vui lòng kiểm tra lại.",
                     EntityType = NotificationEntityType.SaleOrder,
                     EntityId = salesOrder.SalesOrderId,
                     Category = NotificationCategory.Important
