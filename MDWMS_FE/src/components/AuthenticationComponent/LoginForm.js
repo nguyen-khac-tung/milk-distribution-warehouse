@@ -52,31 +52,32 @@ export function LoginForm() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4">
             {/* Logo / Thương hiệu */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-8">
+            <div className="space-y-0">
+                <div className="flex items-center">
                     <img
                         src="/logo.png"
                         alt="Logo"
                         className="w-[100px] h-[100px] object-contain"
                     />
-                    <span className="text-xl font-semibold text-foreground">
-                        HỆ THỐNG PHÂN PHỐI KHO SỮA
+                    <span className="text-xl font-semibold text-foreground leading-none m-0">
+                        HỆ THỐNG KHO PHÂN PHỐI SỮA
                     </span>
                 </div>
 
-                <h2 className="text-4xl font-serif text-foreground leading-tight">
+                <h2 className="text-4xl font-serif text-foreground leading-[1] m-0">
                     Đăng nhập tài khoản
                 </h2>
-                <p className="text-muted-foreground leading-relaxed">
+
+                <p className="text-muted-foreground leading-[1.2] m-0">
                     Nhập thông tin đăng nhập để truy cập vào không gian làm việc
                 </p>
             </div>
 
             {/* Form đăng nhập */}
-            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-                <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                <div className="space-y-1">
                     <Label htmlFor="email" className="text-sm font-medium text-foreground">
                         Email <span style={{ color: "red" }}>*</span>
                     </Label>
@@ -91,7 +92,7 @@ export function LoginForm() {
                     />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="password" className="text-sm font-medium text-foreground">
                             Mật khẩu <span style={{ color: "red" }}>*</span>
