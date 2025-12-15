@@ -621,11 +621,11 @@ namespace MilkDistributionWarehouse.Services
             if (!IsWarehouseStaff(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
 
-            //if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
-            //{
-            //    var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
-            //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
-            //}
+            if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
+            {
+                var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
+                return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
+            }
 
             if (sheet.Status == StocktakingStatus.Completed || sheet.Status == StocktakingStatus.Cancelled)
                 return "Không thể bắt đầu kiểm kê khi phiếu kiểm kê đã Hoàn thành hoặc Đã huỷ.".ToMessageForUser();
