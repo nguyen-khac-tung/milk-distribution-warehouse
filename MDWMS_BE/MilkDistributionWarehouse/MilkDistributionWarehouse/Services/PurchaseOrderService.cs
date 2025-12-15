@@ -445,14 +445,20 @@ namespace MilkDistributionWarehouse.Services
                         "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
                         "Bạn không có quyền thực hiện chức năng này");
 
-                    var estimatedTimeArrival = purchaseOrder.EstimatedTimeArrival;
-                    var today = DateTimeUtility.Now();
 
                     if (currentStatus != PurchaseOrderStatus.Ordered && currentStatus != PurchaseOrderStatus.AwaitingArrival)
                         throw new Exception("Chỉ được xác nhận đơn hàng đã đến khi đơn hàng ở trạng thái Đã đặt hàng hoặc Chờ đến.".ToMessageForUser());
+                    
+                    var estimatedTimeArrival = purchaseOrder.EstimatedTimeArrival;
+                    var todayDate = DateOnly.FromDateTime(DateTimeUtility.Now());
 
-                    if (estimatedTimeArrival != null && estimatedTimeArrival >= today)
-                        throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
+                    if (estimatedTimeArrival.HasValue)
+                    {
+                        var estimatedDate = DateOnly.FromDateTime(estimatedTimeArrival.Value);
+
+                        if (estimatedDate > todayDate)
+                            throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
+                    }
 
                     purchaseOrder.Status = currentStatus == PurchaseOrderStatus.AwaitingArrival ?
                         PurchaseOrderStatus.AssignedForReceiving : PurchaseOrderStatus.GoodsReceived;
