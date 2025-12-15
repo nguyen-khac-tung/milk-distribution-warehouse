@@ -177,7 +177,7 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                if (create.StartTime <= DateTimeUtility.Now())
+                if (create.StartTime < DateTimeUtility.Now())
                     throw new Exception("Thời gian bắt đầu phải là thời gian trong tương lai.".ToMessageForUser());
 
                 var isDuplicationStartTime = await _stocktakingSheetRepository.IsDuplicationStartTimeStocktakingSheet(null, create.StartTime);
@@ -430,7 +430,8 @@ namespace MilkDistributionWarehouse.Services
 
             var stocktakingPallets = await _stocktakingPalletRepository.GetStocktakingPalletsByStocktakingLocationIds(stocktakingLocationIds);
             if (stocktakingPallets == null || !stocktakingPallets.Any())
-                return "Không tìm thấy pallet kiểm kê nào.".ToMessageForUser();
+                return string.Empty;
+                //return "Không tìm thấy pallet kiểm kê nào.".ToMessageForUser();
 
             foreach (var stocktakingPallet in stocktakingPallets)
             {
@@ -621,11 +622,11 @@ namespace MilkDistributionWarehouse.Services
             if (!IsWarehouseStaff(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
 
-            //if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
-            //{
-            //    var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
-            //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
-            //}
+            if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
+            {
+                var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
+                return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
+            }
 
             if (sheet.Status == StocktakingStatus.Completed || sheet.Status == StocktakingStatus.Cancelled)
                 return "Không thể bắt đầu kiểm kê khi phiếu kiểm kê đã Hoàn thành hoặc Đã huỷ.".ToMessageForUser();
