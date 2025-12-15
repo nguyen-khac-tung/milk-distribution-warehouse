@@ -41,7 +41,7 @@ export const STATUS_COLORS = {
   [PURCHASE_ORDER_STATUS.Receiving]: 'bg-orange-100 text-orange-800',
   [PURCHASE_ORDER_STATUS.Inspected]: 'bg-indigo-100 text-indigo-800',
   [PURCHASE_ORDER_STATUS.Completed]: 'bg-emerald-100 text-emerald-800',
-  [PURCHASE_ORDER_STATUS.Ordered]: 'bg-green-100 text-green-800',
+  [PURCHASE_ORDER_STATUS.Ordered]: 'bg-sky-100 text-sky-800',
   [PURCHASE_ORDER_STATUS.AwaitingArrival]: 'bg-cyan-100 text-cyan-800'
 };
 
