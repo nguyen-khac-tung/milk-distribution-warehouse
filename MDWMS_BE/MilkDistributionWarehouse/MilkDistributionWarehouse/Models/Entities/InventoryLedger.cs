@@ -19,6 +19,8 @@ public partial class InventoryLedger
 
     public int? OutQty { get; set; }
 
+    public int? StocktakingChange { get; set; }
+
     public int? BalanceAfter { get; set; }
 
     public int? TypeChange { get; set; }

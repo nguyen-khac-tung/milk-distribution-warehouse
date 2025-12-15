@@ -54,21 +54,22 @@ export function LoginForm() {
     return (
         <div className="space-y-8">
             {/* Logo / Thương hiệu */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-8">
+            <div className="">
+                <div className="flex items-center gap-2">
                     <img
                         src="/logo.png"
                         alt="Logo"
                         className="w-[100px] h-[100px] object-contain"
                     />
                     <span className="text-xl font-semibold text-foreground">
-                        HỆ THỐNG PHÂN PHỐI KHO SỮA
+                        HỆ THỐNG KHO PHÂN PHỐI SỮA
                     </span>
                 </div>
 
-                <h2 className="text-4xl font-serif text-foreground leading-tight">
+                <h2 className="text-4xl font-serif text-foreground leading-tight mt-3 mb-3">
                     Đăng nhập tài khoản
                 </h2>
+
                 <p className="text-muted-foreground leading-relaxed">
                     Nhập thông tin đăng nhập để truy cập vào không gian làm việc
                 </p>

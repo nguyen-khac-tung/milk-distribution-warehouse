@@ -856,6 +856,9 @@ export default function InventoryReport({ onClose }) {
         } else if (sortField === "outQuantityPackages") {
           aValue = a.outQuantityPackages || 0
           bValue = b.outQuantityPackages || 0
+        } else if (sortField === "stocktakingChangesPackages") {
+          aValue = a.stocktakingChangesPackages || 0
+          bValue = b.stocktakingChangesPackages || 0
         } else if (sortField === "endingInventoryPackages") {
           aValue = a.endingInventoryPackages || 0
           bValue = b.endingInventoryPackages || 0
@@ -1387,6 +1390,20 @@ export default function InventoryReport({ onClose }) {
                               )}
                             </div>
                           </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-[120px]">
+                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("stocktakingChangesPackages")}>
+                              <span>Chênh lệch kiểm kê</span>
+                              {sortField === "stocktakingChangesPackages" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
                           <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-24">
                             <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("endingInventoryPackages")}>
                               <span>Tồn cuối kỳ</span>
@@ -1544,6 +1561,9 @@ export default function InventoryReport({ onClose }) {
                               </TableCell>
                               <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {(item.outQuantityPackages || 0).toLocaleString("vi-VN")}
+                              </TableCell>
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
+                                {(item.stocktakingChangesPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
                               <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {(item.endingInventoryPackages || 0).toLocaleString("vi-VN")}

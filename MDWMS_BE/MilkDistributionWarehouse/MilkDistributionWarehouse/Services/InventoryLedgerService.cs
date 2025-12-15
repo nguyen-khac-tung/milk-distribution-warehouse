@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerByGINID(string GoodsIssueNoteId);
         Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerByGRNID(string GoodsReceiptNoteId);
         Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerByDPNID(string DisposalNoteId);
+        Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerStocktakingChange(Pallet pallet, int OldQty,int ActQty);
     }
 
     public class InventoryLedgerService : IInventoryLedgerService
@@ -47,6 +48,7 @@ namespace MilkDistributionWarehouse.Services
                     EventDate = dto.EventDate ?? DateTimeUtility.Now(),
                     InQty = dto.InQty ?? 0,
                     OutQty = dto.OutQty ?? 0,
+                    StocktakingChange = dto.StockTakingChange ?? 0,
                     BalanceAfter = dto.BalanceAfter ?? 0,
                     TypeChange = dto.TypeChange
                 };
@@ -90,6 +92,7 @@ namespace MilkDistributionWarehouse.Services
                             EventDate = dto.EventDate ?? DateTimeUtility.Now(),
                             InQty = dto.InQty ?? 0,
                             OutQty = dto.OutQty ?? 0,
+                            StocktakingChange = dto.StockTakingChange ?? 0,
                             BalanceAfter = dto.BalanceAfter ?? 0,
                             TypeChange = dto.TypeChange
                         };
@@ -151,6 +154,7 @@ namespace MilkDistributionWarehouse.Services
                         EventDate = DateTimeUtility.Now(),
                         InQty = 0,
                         OutQty = outQty,
+                        StocktakingChange = 0,
                         BalanceAfter = balanceAfter,
                         TypeChange = InventoryLegerTypeChange.Disposal
                     };
@@ -195,6 +199,7 @@ namespace MilkDistributionWarehouse.Services
                         EventDate = DateTimeUtility.Now(),
                         InQty = 0,
                         OutQty = outQty,
+                        StocktakingChange = 0,
                         BalanceAfter = balanceAfter,
                         TypeChange = InventoryLegerTypeChange.Issue
                     };
@@ -239,6 +244,7 @@ namespace MilkDistributionWarehouse.Services
                         EventDate = DateTimeUtility.Now(),
                         InQty = inQty,
                         OutQty = 0,
+                        StocktakingChange = 0,
                         BalanceAfter = balanceAfter,
                         TypeChange = InventoryLegerTypeChange.Receipt
                     };
@@ -250,6 +256,53 @@ namespace MilkDistributionWarehouse.Services
                 }
 
                 return ("", lastDto);
+            }
+            catch (Exception ex)
+            {
+                return ($"{ex.Message}", default);
+            }
+        }
+
+        public async Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerStocktakingChange(Pallet pallet, int OldQty, int ActQty)
+        {
+            if (pallet == null)
+                return ("Pallet is null.", default);
+
+            try
+            {
+                if (!pallet.GoodsPackingId.HasValue)
+                    return ("Pallet GoodPackingId is invalid.", default);
+
+                var goodsId = pallet.Batch?.GoodsId ?? 0;
+                if (goodsId == 0)
+                    return ("Pallet batch or goods information is invalid.", default);
+
+                var goodsPackingId = pallet.GoodsPackingId.Value;
+
+                // get last ledger to determine current balance
+                var last = await _inventoryLedgerRepository.GetLastInventoryLedgerAsync(goodsId, goodsPackingId);
+                var balanceBefore = last?.BalanceAfter ?? 0;
+
+                var stocktakingChange = ActQty - OldQty;
+                var balanceAfter = balanceBefore + stocktakingChange;
+
+                var entity = new InventoryLedger
+                {
+                    GoodsId = goodsId,
+                    GoodPackingId = goodsPackingId,
+                    EventDate = DateTimeUtility.Now(),
+                    InQty = 0,
+                    OutQty = 0,
+                    StocktakingChange = stocktakingChange,
+                    BalanceAfter = balanceAfter,
+                    TypeChange = InventoryLegerTypeChange.Stocktaking
+                };
+
+                var created = await _inventoryLedgerRepository.CreateInventoryLedger(entity);
+                if (created == null) return ("Failed to create inventory ledger for stocktaking change.", default);
+
+                var dto = _mapper.Map<InventoryLedgerResponseDto>(created);
+                return ("", dto);
             }
             catch (Exception ex)
             {

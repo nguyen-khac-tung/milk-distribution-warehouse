@@ -7,6 +7,7 @@
         public DateTime? EventDate { get; set; }
         public int? InQty { get; set; }
         public int? OutQty { get; set; }
+        public int? StockTakingChange { get; set; }
         public int? BalanceAfter { get; set; }
         public int? TypeChange { get; set; }
     }
@@ -19,6 +20,7 @@
         public DateTime? EventDate { get; set; }
         public int? InQty { get; set; }
         public int? OutQty { get; set; }
+        public int? StockTakingChange { get; set; }
         public int? BalanceAfter { get; set; }
         public int? TypeChange { get; set; }
     }

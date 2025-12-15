@@ -17,6 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(string? saleOrderId);
         Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
         Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate, int? userId);
+        Task<(string, SalesOrderShipmentDateUpdateDto?)> UpdateSalesOrderShipmentDate(SalesOrderShipmentDateUpdateDto salesOrderUpdate, int? userId);
         Task<(string, T?)> UpdateStatusSalesOrder<T>(T salesOrderUpdateStatus, int? userId) where T : SaleSOrderUpdateStatusDto;
         Task<string> DeleteSalesOrder(string? salesOrderId, int? userId);
     }
@@ -213,6 +214,50 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        public async Task<(string, SalesOrderShipmentDateUpdateDto?)> UpdateSalesOrderShipmentDate(SalesOrderShipmentDateUpdateDto salesOrderUpdate, int? userId)
+        {
+            var salesOrderExist = await _salesOrderRepository.GetSalesOrderById(salesOrderUpdate.SalesOrderId);
+            if (salesOrderExist == null) return ("Sales order exist is null", null);
+
+            if (salesOrderExist.CreatedBy != userId)
+                return ("Người dùng hiện tại không có quyền thực hiện thao tác này".ToMessageForUser(), null);
+
+            if (salesOrderExist.Status != SalesOrderStatus.PendingApproval && salesOrderExist.Status != SalesOrderStatus.Approved
+                && salesOrderExist.Status != SalesOrderStatus.AssignedForPicking)
+                return ("Ngày giao hàng dự kiến chỉ có thể cập nhật khi đơn hàng ở trạng thái: Chờ duyệt, Đã duyệt hoặc Đã phân công.".ToMessageForUser(), null);
+
+            if (salesOrderUpdate.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày giao hàng dự kiến không thể trong quá khứ.".ToMessageForUser(), null);
+
+            var isDuplicate = await _salesOrderRepository.GetAllSalesOrders().AnyAsync(s =>
+                        s.SalesOrderId != salesOrderExist.SalesOrderId
+                        && s.RetailerId == salesOrderExist.RetailerId
+                        && s.EstimatedTimeDeparture == salesOrderUpdate.EstimatedTimeDeparture
+                        && s.Status == SalesOrderStatus.PendingApproval);
+            if (isDuplicate)
+                return ($"Nhà bán lẻ đã có đơn hàng khác giao ngày {salesOrderUpdate.EstimatedTimeDeparture} đang chờ duyệt".ToMessageForUser(), null);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                salesOrderExist.EstimatedTimeDeparture = salesOrderUpdate.EstimatedTimeDeparture;
+                salesOrderExist.ShipmentDateChangeReason = salesOrderUpdate.ShipmentDateChangeReason;
+                salesOrderExist.UpdateAt = DateTimeUtility.Now();
+
+                await _salesOrderRepository.UpdateSalesOrder(salesOrderExist);
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                await HandleShipmentDateChangeNotification(salesOrderExist);
+                return ("", salesOrderUpdate);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ("Cập nhật đơn hàng thất bại.".ToMessageForUser(), null);
+            }
+        }
+
         public async Task<string> DeleteSalesOrder(string? salesOrderId, int? userId)
         {
             if (salesOrderId == null) return "SalesOrderId is invalid.";
@@ -365,7 +410,7 @@ namespace MilkDistributionWarehouse.Services
             var pendingSalesOrders = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.PendingApproval);
             var hasPendingSaleOrder = await pendingSalesOrders.AnyAsync(s => s.RetailerId == salesOrderUpdate.RetailerId
                 && s.EstimatedTimeDeparture == salesOrderUpdate.EstimatedTimeDeparture);
-            if (hasPendingSaleOrder) return "Không thể gửi duyệt.Nhà bán lẻ này đã có một đơn hàng khác đang chờ duyệt cho cùng ngày giao dự kiến.".ToMessageForUser();
+            if (hasPendingSaleOrder) return "Không thể gửi duyệt. Nhà bán lẻ này đã có một đơn hàng khác đang chờ duyệt cho cùng ngày giao dự kiến.".ToMessageForUser();
 
             var approvalSalesOrdersQuery = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.Approved);
             var potentialMatches = await approvalSalesOrdersQuery
@@ -480,6 +525,50 @@ namespace MilkDistributionWarehouse.Services
                     break;
 
                 default: break;
+            }
+
+            if (notificationsToCreate.Count > 0)
+                await _notificationService.CreateNotificationBulk(notificationsToCreate);
+        }
+
+        private async Task HandleShipmentDateChangeNotification(SalesOrder salesOrder)
+        {
+            var notificationsToCreate = new List<NotificationCreateDto>();
+            var saleManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+            foreach (var manager in saleManagers ?? new List<User>())
+            {
+                notificationsToCreate.Add(new NotificationCreateDto()
+                {
+                    UserId = manager.UserId,
+                    Title = "Ngày giao hàng dự kiến thay đổi",
+                    Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã đổi ngày giao sang ngày '{salesOrder.EstimatedTimeDeparture}'. Lý do: {salesOrder.ShipmentDateChangeReason}.",
+                    EntityType = NotificationEntityType.SaleOrder,
+                    EntityId = salesOrder.SalesOrderId
+                });
+            }
+            var warehouseManagers = await _userRepository.GetUsersByRoleId(RoleType.WarehouseManager);
+            foreach (var manager in warehouseManagers ?? new List<User>())
+            {
+                notificationsToCreate.Add(new NotificationCreateDto()
+                {
+                    UserId = manager.UserId,
+                    Title = "Ngày giao hàng dự kiến thay đổi",
+                    Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã đổi ngày giao sang ngày '{salesOrder.EstimatedTimeDeparture}'. Lý do: {salesOrder.ShipmentDateChangeReason}.",
+                    EntityType = NotificationEntityType.SaleOrder,
+                    EntityId = salesOrder.SalesOrderId
+                });
+            }
+            if (salesOrder.AssignTo != null)
+            {
+                notificationsToCreate.Add(new NotificationCreateDto()
+                {
+                    UserId = salesOrder.AssignTo,
+                    Title = "Ngày giao hàng dự kiến thay đổi",
+                    Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' bạn đang phụ trách đã đổi ngày giao sang ngày '{salesOrder.EstimatedTimeDeparture}'. Vui lòng kiểm tra lại.",
+                    EntityType = NotificationEntityType.SaleOrder,
+                    EntityId = salesOrder.SalesOrderId,
+                    Category = NotificationCategory.Important
+                });
             }
 
             if (notificationsToCreate.Count > 0)

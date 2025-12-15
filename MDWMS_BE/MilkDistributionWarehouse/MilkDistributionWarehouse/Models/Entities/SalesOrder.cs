@@ -37,6 +37,8 @@ public partial class SalesOrder
 
     public string RejectionReason { get; set; }
 
+    public string ShipmentDateChangeReason { get; set; }
+
     public virtual User AcknowledgedByNavigation { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }

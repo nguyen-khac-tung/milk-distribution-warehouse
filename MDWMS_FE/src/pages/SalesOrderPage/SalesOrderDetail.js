@@ -18,6 +18,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 import { cleanErrorMessage, extractErrorMessage } from '../../utils/Validation';
 import { createGoodsIssueNote, getDetailGoodsIssueNote } from '../../services/GoodsIssueNoteService';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
+import SaleOrderedModal from '../../components/SaleOrderCompoents/SaleOrderedModal';
+import { updateSalesOrderShipmentDate } from '../../services/SalesOrderService';
 
 const SalesOrderDetail = () => {
     const { id } = useParams();
@@ -31,11 +33,13 @@ const SalesOrderDetail = () => {
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [showAssignPickingModal, setShowAssignPickingModal] = useState(false);
     const [showCreateDeliverySlipModal, setShowCreateDeliverySlipModal] = useState(false);
+    const [showChangeDateModal, setShowChangeDateModal] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [assignPickingLoading, setAssignPickingLoading] = useState(false);
     const [createDeliverySlipLoading, setCreateDeliverySlipLoading] = useState(false);
+    const [changeDateLoading, setChangeDateLoading] = useState(false);
     const { hasPermission, isWarehouseManager, isWarehouseStaff } = usePermissions();
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
@@ -113,6 +117,50 @@ const SalesOrderDetail = () => {
     const canSubmitDraft = () => canPerformSalesOrderDetailAction('submit_pending_approval', salesOrder, hasPermission, userInfo);
     const canAssignForPicking = () => canPerformSalesOrderDetailAction('assign_for_picking', salesOrder, hasPermission, userInfo);
     const canCreateDeliverySlip = () => canPerformSalesOrderDetailAction('create_delivery_slip', salesOrder, hasPermission, userInfo);
+
+
+    const canChangeExportDate = () => {
+        // Chỉ nhân viên kinh doanh tạo đơn mới có quyền sửa
+        // Check userId from userInfo and createdBy.userId from salesOrder
+        const currentUserId = userInfo?.userId;
+        const creatorId = salesOrder?.createdBy?.userId;
+
+        if (!currentUserId || !creatorId || currentUserId != creatorId) return false;
+
+        // Cho phép hiển thị ở 3 trạng thái: PendingApproval, Approved, AssignedForPicking
+        return salesOrder.status === SALES_ORDER_STATUS.PendingApproval ||
+            salesOrder.status === SALES_ORDER_STATUS.Approved ||
+            salesOrder.status === SALES_ORDER_STATUS.AssignedForPicking;
+    };
+
+    const handleChangeDateConfirm = async (estimatedTimeDeparture, reason) => {
+        setChangeDateLoading(true);
+        try {
+            await updateSalesOrderShipmentDate(
+                salesOrder.salesOrderId,
+                estimatedTimeDeparture,
+                reason
+            );
+
+            if (window.showToast) {
+                window.showToast("Thay đổi ngày dự kiến xuất thành công!", "success");
+            }
+            setShowChangeDateModal(false);
+            const response = await getSalesOrderDetail(id);
+            if (response && response.success) {
+                setSalesOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error changing estimated date:", error);
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi thay đổi ngày dự kiến xuất")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
+        } finally {
+            setChangeDateLoading(false);
+        }
+    };
 
     const handleSubmitDraftConfirm = async () => {
         setSubmitLoading(true);
@@ -396,9 +444,11 @@ const SalesOrderDetail = () => {
                                                 <Calendar className="h-4 w-4 text-blue-600" />
                                                 <label className="font-medium text-gray-700">Thời gian dự kiến xuất:</label>
                                             </div>
-                                            <span className="font-semibold text-gray-900">
-                                                {formatDate(salesOrder.estimatedTimeDeparture)}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold text-gray-900">
+                                                    {formatDate(salesOrder.estimatedTimeDeparture)}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -574,6 +624,15 @@ const SalesOrderDetail = () => {
                                     </Button>
                                 )}
 
+                                {canChangeExportDate() && (
+                                    <Button
+                                        onClick={() => setShowChangeDateModal(true)}
+                                        className="bg-blue-600 hover:bg-blue-500 text-white h-[38px] px-8"
+                                    >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Thay đổi ngày dự kiến xuất
+                                    </Button>
+                                )}
                             </div>
 
                         </div>
@@ -664,6 +723,16 @@ const SalesOrderDetail = () => {
                 onConfirm={handleCreateDeliverySlip}
                 saleOrder={salesOrder}
                 loading={createDeliverySlipLoading}
+            />
+
+            {/* Change Date Modal */}
+            <SaleOrderedModal
+                isOpen={showChangeDateModal}
+                onClose={() => setShowChangeDateModal(false)}
+                onConfirm={handleChangeDateConfirm}
+                saleOrder={salesOrder}
+                loading={changeDateLoading}
+                mode="change"
             />
 
 
