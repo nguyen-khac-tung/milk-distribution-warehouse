@@ -70,7 +70,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<StocktakingAreaUpdate> StocktakingAreaReAssign { get; set; }
     }
 
-    public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate { }
+    public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate
+    {
+        public string? Note { get; set; }
+    }
     public class StocktakingSheetInProgressStatus : StocktakingSheetStatusUpdate
     {
         public Guid? StocktakingAreaId { get; set; }

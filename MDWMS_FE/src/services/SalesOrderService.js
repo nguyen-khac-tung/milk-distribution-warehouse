@@ -261,3 +261,23 @@ export const createDeliverySlip = async (data) => {
         throw error;
     }
 };
+
+// Cập nhật ngày vận chuyển đơn hàng (Ngày dự kiến xuất)
+export const updateSalesOrderShipmentDate = async (salesOrderId, estimatedTimeDeparture, shipmentDateChangeReason = '') => {
+    try {
+        const data = {
+            salesOrderId: salesOrderId,
+            estimatedTimeDeparture: estimatedTimeDeparture,
+            shipmentDateChangeReason: shipmentDateChangeReason
+        };
+
+        const res = await api.put("/SalesOrder/UpdateSalesOrderShipmentDate", data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating sales order shipment date:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};

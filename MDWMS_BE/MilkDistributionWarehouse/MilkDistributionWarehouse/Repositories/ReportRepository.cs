@@ -816,6 +816,9 @@ namespace MilkDistributionWarehouse.Repositories
                     var outSum = g.Where(x => x.EventDate.HasValue && x.EventDate.Value >= from && x.EventDate.Value <= to)
                                   .Sum(x => x.OutQty ?? 0);
 
+                    var stockChangeSum = g.Where(x => x.EventDate.HasValue && x.EventDate.Value >= from && x.EventDate.Value <= to)
+                                  .Sum(x => x.StocktakingChange ?? 0);
+
                     var endingRec = g.Where(x => x.EventDate.HasValue && x.EventDate.Value <= to)
                                      .OrderByDescending(x => x.EventDate)
                                      .FirstOrDefault();
@@ -834,6 +837,7 @@ namespace MilkDistributionWarehouse.Repositories
                         BeginningInventoryPackages = beginning,
                         InQuantityPackages = inSum,
                         OutQuantityPackages = outSum,
+                        StocktakingChangesPackages = stockChangeSum,
                         EndingInventoryPackages = ending
                     };
                 })
@@ -844,6 +848,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(r => !(r.BeginningInventoryPackages == 0
                               && r.InQuantityPackages == 0
                               && r.OutQuantityPackages == 0
+                              && r.StocktakingChangesPackages == 0
                               && r.EndingInventoryPackages == 0))
                 .ToList();
 

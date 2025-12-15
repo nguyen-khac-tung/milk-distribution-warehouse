@@ -118,6 +118,19 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string? Note { get; set; }
     }
 
+    public class SalesOrderShipmentDateUpdateDto
+    {
+        public string SalesOrderId { get; set; }
+
+        [JsonConverter(typeof(NullableDateOnlyConverter))]
+        [Required(ErrorMessage = "Ngày dự kiến giao không được bỏ trống.")]
+        [DataType(DataType.Date, ErrorMessage = "Định dạng ngày không hợp lệ.")]
+        public DateOnly? EstimatedTimeDeparture { get; set; }
+
+        [Required(ErrorMessage = "Lý do thay đổi không được bỏ trống.")]
+        public string? ShipmentDateChangeReason { get; set; }
+    }
+
     public class SalesOrderItemDetailUpdateDto : SalesOrderItemDetailCreateDto
     {
         public int? SalesOrderDetailId { get; set; }

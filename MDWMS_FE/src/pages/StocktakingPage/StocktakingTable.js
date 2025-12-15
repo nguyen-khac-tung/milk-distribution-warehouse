@@ -23,7 +23,7 @@ const StocktakingTable = ({
     onStartStocktaking,
     loading
 }) => {
-    const { isWarehouseManager, isWarehouseStaff } = usePermissions();
+    const { isWarehouseManager, isWarehouseStaff, isSaleManager } = usePermissions();
     const navigate = useNavigate();
 
     // Detect available fields in data
@@ -269,7 +269,7 @@ const StocktakingTable = ({
                                                     </button>
                                                 </PermissionWrapper>
                                                 {/* Icon xem chi tiết đơn kiểm kê kho - hiển thị cho các trạng thái khác (có permission, trừ nhân viên kho ở các trạng thái đã xử lý riêng) */}
-                                                {/* Quản lý kho có thể xem chi tiết đơn kiểm kê kho ở trạng thái đã hủy */}
+                                                {/* Quản lý kho và quản lý kinh doanh có thể xem chi tiết đơn kiểm kê kho ở trạng thái đã hủy */}
                                                 {(() => {
                                                     const isCancelled = stocktaking.status === STOCKTAKING_STATUS.Cancelled || stocktaking.status === 3 || stocktaking.status === '3';
                                                     const isOtherStatus = stocktaking.status === STOCKTAKING_STATUS.InProgress ||
@@ -296,7 +296,7 @@ const StocktakingTable = ({
                                                             stocktaking.status !== 7 &&
                                                             stocktaking.status !== '7');
 
-                                                    const shouldShow = (isWarehouseManager && isCancelled) || (canViewForOtherStatus && isOtherStatus);
+                                                    const shouldShow = (isWarehouseManager && isCancelled) || (isSaleManager && isCancelled) || (canViewForOtherStatus && isOtherStatus);
 
                                                     return shouldShow && (
                                                         <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
