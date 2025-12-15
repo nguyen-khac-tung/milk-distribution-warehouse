@@ -32,7 +32,7 @@ namespace MilkDistributionWarehouse.Services
         public StocktakingLocationService(IStocktakingLocationRepository stocktakingLocationRepository, IMapper mapper,
             ILocationRepository locationRepository, IStocktakingPalletService stocktakingPalletService, IUnitOfWork unitOfWork,
             IStocktakingPalletRepository stocktakingPalletRepository, IStocktakingAreaRepository stocktakingAreaRepository,
-            IStocktakingStatusDomainService stocktakingStatusDomainService, 
+            IStocktakingStatusDomainService stocktakingStatusDomainService,
             INotificationService notificationService)
         {
             _stocktakingLocationRepository = stocktakingLocationRepository;
@@ -78,9 +78,12 @@ namespace MilkDistributionWarehouse.Services
             if (createBulkStockLocationResult == 0)
                 return ("Tạo vị trí kiểm kê thất bại.", default);
 
-            var (msg, createBulkStockPallet) = await _stocktakingPalletService.CreateStocktakingPalletBulk(stocktakingPalletCreates);
-            if (!string.IsNullOrEmpty(msg))
-                return (msg, default);
+            if (stocktakingPalletCreates.Any())
+            {
+                var (msg, createBulkStockPallet) = await _stocktakingPalletService.CreateStocktakingPalletBulk(stocktakingPalletCreates);
+                if (!string.IsNullOrEmpty(msg))
+                    return (msg, default);
+            }
 
             return ("", create);
         }
@@ -287,7 +290,7 @@ namespace MilkDistributionWarehouse.Services
 
         private async Task<string> HandleStocktakingLocationPendingApproval(StocktakingLocation update)
         {
-            if(update.Status != StockLocationStatus.Counted)
+            if (update.Status != StockLocationStatus.Counted)
             {
                 return "Chỉ được cập nhật trạng thái Chờ duyệt khi vị trí kiểm kê ở trạng thái Đã kiểm.".ToMessageForUser();
             }
@@ -304,7 +307,7 @@ namespace MilkDistributionWarehouse.Services
 
         private string HandleStocktakingLocationCounted(StocktakingLocation update)
         {
-            if(update.Status != StockLocationStatus.Pending)
+            if (update.Status != StockLocationStatus.Pending)
             {
                 return "Chỉ được cập nhật trạng thái Đã kiểm khi vị trí kiểm kê ở trạng thái Đang chờ.".ToMessageForUser();
             }
