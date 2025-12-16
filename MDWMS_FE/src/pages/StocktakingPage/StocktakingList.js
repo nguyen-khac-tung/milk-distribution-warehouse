@@ -128,7 +128,7 @@ export default function StocktakingList() {
         if (selectedDate) {
             // selectedDate KHẢ NĂNG CAO là dạng "2025-11-27"
             const start = `${selectedDate}T00:00:00`;
-            
+
             // Tăng 1 ngày bằng cách tách string
             const d = new Date(selectedDate);
             d.setDate(d.getDate());
@@ -220,12 +220,12 @@ export default function StocktakingList() {
         setShowCancelModal(true);
     };
 
-    const handleCancelConfirm = async () => {
+    const handleCancelConfirm = async (note) => {
         if (!selectedStocktaking) return;
 
         setCancelLoading(true);
         try {
-            await cancelStocktaking(selectedStocktaking.stocktakingSheetId);
+            await cancelStocktaking(selectedStocktaking.stocktakingSheetId, note);
 
             if (window.showToast) {
                 window.showToast("Hủy phiếu kiểm kê thành công!", "success");
