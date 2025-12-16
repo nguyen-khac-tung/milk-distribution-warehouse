@@ -1,9 +1,27 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/*.{js,css,png,jpg,gif,ico,svg,woff,woff2,ttf,eot}"]
+    "exclude": [
+      "/images/*.{png,jpg,gif}", 
+      "/css/*", 
+      "/static/*", 
+      "/*.{js,css,png,jpg,gif,ico,svg,woff,woff2,ttf,eot}"
+    ]
   },
-  "routes": [],
+  "routes": [
+    {
+      "route": "/index.html",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    },
+    {
+      "route": "/",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    }
+  ],
   "responseOverrides": {
     "404": {
       "rewrite": "/index.html",
@@ -11,4 +29,3 @@
     }
   }
 }
-

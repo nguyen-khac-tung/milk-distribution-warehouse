@@ -631,6 +631,10 @@ namespace MilkDistributionWarehouse.Services
             if (sheet.Status == StocktakingStatus.Completed || sheet.Status == StocktakingStatus.Cancelled)
                 return "Không thể bắt đầu kiểm kê khi phiếu kiểm kê đã Hoàn thành hoặc Đã huỷ.".ToMessageForUser();
 
+            string message = await ValidationTransactionOrderInProgress();
+            if (!string.IsNullOrEmpty(message))
+                return message;
+
             if (inProgressStatus.StocktakingAreaId != Guid.Empty)
             {
                 bool hasOtherActiveArea = sheet.StocktakingAreas.Any(sa =>
@@ -676,6 +680,23 @@ namespace MilkDistributionWarehouse.Services
             var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, targetStatus);
             if (!string.IsNullOrEmpty(updateMessage))
                 return updateMessage;
+
+            return string.Empty;
+        }
+
+        private async Task<string> ValidationTransactionOrderInProgress()
+        {
+            var hasInProgressOrder = await _stocktakingSheetRepository.HasInProgressPurchaseOrder();
+            if(hasInProgressOrder)
+                return "Hiện đang có đơn mua hàng Đang nhập kho. Vui lòng hoàn thành đơn mua hàng đó trước khi bắt đầu kiểm kê.".ToMessageForUser();
+
+            var hasInProgressGIN = await _stocktakingSheetRepository.HasInProgressGIN();
+            if (hasInProgressGIN)
+                return "Hiện đang có phiếu xuất kho Đang xử lý. Vui lòng hoàn thành phiếu xuất kho đó trước khi bắt đầu kiểm kê.".ToMessageForUser();
+
+            var hasInProgressDisposal = await _stocktakingSheetRepository.HasInProgressDisposalNote();
+            if (hasInProgressDisposal)
+                return "Hiện đang có phiếu xuất huỷ Đang xử lý. Vui lòng hoàn thành phiếu xuất huỷ đó trước khi bắt đầu kiểm kê.".ToMessageForUser();
 
             return string.Empty;
         }
