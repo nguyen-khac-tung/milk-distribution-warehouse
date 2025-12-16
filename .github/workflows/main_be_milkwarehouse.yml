@@ -54,14 +54,14 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8CEC02ECC6EF459CBF175886150AA5F7 }} 
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_43AFEB25761A46A88FE380089ADEC186 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F7BA94202F24402888B4A2492A08E1B0 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2A0790ADDD8B4D30B7CEB9BE8B675737 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_70991818F04B4157B7B97621737DEA61 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EE08F070622B4EDB810831DC20C91914 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'milkwarehouse'
+          app-name: 'milkdistributionwarehouse'
           slot-name: 'Production'
           package: .
