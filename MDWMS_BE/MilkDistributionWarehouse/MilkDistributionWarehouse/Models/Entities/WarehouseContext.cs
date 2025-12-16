@@ -566,8 +566,6 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__8AFACE1AF07F51D2");
-
             entity.ToTable("Role");
 
             entity.Property(e => e.Description).HasMaxLength(100);
