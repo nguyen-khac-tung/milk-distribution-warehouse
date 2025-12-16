@@ -16,6 +16,9 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int> DeleteStocktakingSheet(StocktakingSheet delete);
         Task<bool> IsDuplicationStartTimeStocktakingSheet(string? stocktakingSheetId, DateTime startTime);
         Task<bool> HasActiveStocktakingInProgressAsync();
+        Task<bool> HasInProgressPurchaseOrder();
+        Task<bool> HasInProgressGIN();
+        Task<bool> HasInProgressDisposalNote();
     }
     public class StocktakingSheetRepository : IStocktakingSheetRepository
     {
@@ -142,6 +145,26 @@ namespace MilkDistributionWarehouse.Repositories
                     ss.Status == StocktakingStatus.PendingApproval ||
                     ss.Status == StocktakingStatus.Approved);
             //return false;
+        }
+
+        public async Task<bool> HasInProgressPurchaseOrder()
+        {
+            return await _context.PurchaseOrders
+                .AnyAsync(po => po.Status == PurchaseOrderStatus.Inspected);
+        }
+
+        public async Task<bool> HasInProgressGIN()
+        {
+            return await _context.GoodsIssueNotes
+                .AnyAsync(gin => gin.Status == GoodsIssueNoteStatus.Picking
+                        || gin.Status == GoodsIssueNoteStatus.PendingApproval);
+        }
+
+        public async Task<bool> HasInProgressDisposalNote()
+        {
+            return await _context.DisposalNotes
+                .AnyAsync(dn => dn.Status == DisposalNoteStatus.Picking
+                        || dn.Status == DisposalNoteStatus.PendingApproval);
         }
     }
 }
