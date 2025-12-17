@@ -120,7 +120,7 @@ namespace MilkDistributionWarehouse
             {
                 options.AddPolicy("CorsPolicy", corsBuilder =>
                 {
-                    corsBuilder.WithOrigins("http://khophanphoisua.id.vn", "https://khophanphoisua.id.vn")
+                    corsBuilder.WithOrigins("http://www.khophanphoisua.id.vn/login", "https://www.khophanphoisua.id.vn/login", "https://khophanphoisua.id.vn/login")
                                .AllowAnyHeader()
                                .AllowAnyMethod()
                                .AllowCredentials()
