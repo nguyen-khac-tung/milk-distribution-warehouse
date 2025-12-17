@@ -11,6 +11,7 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<StocktakingSheet> GetStocktakingSheet();
         Task<StocktakingSheet?> GetStocktakingSheetById(string stocktakingSheetId);
         Task<StocktakingSheet?> GetStocktakingSheetForDeleteById(string stocktakingSheetId);
+        Task<StocktakingSheet?> GetStocktakingSheetByStocktakingId(string stocktakingSheetId);
         Task<int> CreateStocktakingSheet(StocktakingSheet create);
         Task<int> UpdateStockingtakingSheet(StocktakingSheet update);
         Task<int> DeleteStocktakingSheet(StocktakingSheet delete);
@@ -49,6 +50,30 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(ss => ss.StocktakingAreas)
                     .ThenInclude(sa => sa.Area)
                         .ThenInclude(a => a.Locations)
+
+                .AsSplitQuery()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ss => ss.StocktakingSheetId.Equals(stocktakingSheetId));
+        }
+
+        public async Task<StocktakingSheet?> GetStocktakingSheetByStocktakingId(string stocktakingSheetId)
+        {
+            return await _context.StocktakingSheets
+
+                .Include(ss => ss.CreatedByNavigation)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.AssignToNavigation)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.Area)
+                        .ThenInclude(a => a.StorageCondition)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.Area)
+                        .ThenInclude(a => a.Locations)
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.StocktakingLocations)
 
                 .AsSplitQuery()
                 .AsNoTracking()

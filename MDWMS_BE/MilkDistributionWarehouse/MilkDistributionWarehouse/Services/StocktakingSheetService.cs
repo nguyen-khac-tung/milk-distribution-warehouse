@@ -146,22 +146,30 @@ namespace MilkDistributionWarehouse.Services
             if (string.IsNullOrEmpty(stocktakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.".ToMessageForUser(), default);
 
-            var stocktakingSheetDetail = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            var stocktakingSheetDetail = await _stocktakingSheetRepository.GetStocktakingSheetByStocktakingId(stocktakingSheetId);
             if (stocktakingSheetDetail == null)
                 return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
             var stocktakingSheetMap = _mapper.Map<StocktakingSheetDetail>(stocktakingSheetDetail);
 
-            if (userRole != null &&
-                (userRole.Contains(RoleNames.WarehouseManager) || userRole.Contains(RoleNames.SalesManager)))
+            if (userRole != null)
             {
-                stocktakingSheetMap.IsDiableButtonInProgress = false;
+                stocktakingSheetMap.IsDiableButtonInProgress = userRole.Contains(RoleNames.WarehouseStaff) ?
+                    !(stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
+                && !IsBeforeEditDeadline(stocktakingSheetMap.StartTime)) : true;
+
+                stocktakingSheetMap.CanViewStocktakingArea = userRole.Contains(RoleNames.WarehouseManager) || userRole.Contains(RoleNames.SalesManager)
+                    ? stocktakingSheetDetail.StocktakingAreas.Any(sa => sa.StocktakingLocations.Any())
+                    : stocktakingSheetDetail.StocktakingAreas.Any(sa =>
+                        sa.AssignTo == userId &&
+                        sa.StocktakingLocations.Any()
+                    );  
             }
             else
             {
                 stocktakingSheetMap.IsDiableButtonInProgress =
-                    stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned);
-                    //|| !IsBeforeEditDeadline(stocktakingSheetMap.StartTime);
+                    stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
+                || !IsBeforeEditDeadline(stocktakingSheetMap.StartTime);
             }
 
             return ("", stocktakingSheetMap);
@@ -227,7 +235,7 @@ namespace MilkDistributionWarehouse.Services
 
                 stocktakingSheetMap.CreatedBy = userId;
 
-                stocktakingSheetMap.Status = create.StocktakingAreaCreates.Any() ?  StocktakingStatus.Assigned : StocktakingStatus.Draft;
+                stocktakingSheetMap.Status = create.StocktakingAreaCreates.Any() ? StocktakingStatus.Assigned : StocktakingStatus.Draft;
 
                 var resultCreate = await _stocktakingSheetRepository.CreateStocktakingSheet(stocktakingSheetMap);
                 if (resultCreate == 0)
@@ -431,7 +439,7 @@ namespace MilkDistributionWarehouse.Services
             var stocktakingPallets = await _stocktakingPalletRepository.GetStocktakingPalletsByStocktakingLocationIds(stocktakingLocationIds);
             if (stocktakingPallets == null || !stocktakingPallets.Any())
                 return string.Empty;
-                //return "Không tìm thấy pallet kiểm kê nào.".ToMessageForUser();
+            //return "Không tìm thấy pallet kiểm kê nào.".ToMessageForUser();
 
             foreach (var stocktakingPallet in stocktakingPallets)
             {
@@ -466,7 +474,7 @@ namespace MilkDistributionWarehouse.Services
                     if (updatedPallet == null)
                         return $"Cập nhật số lượng pallet {stocktakingPallet.PalletId} thất bại.".ToMessageForUser();
 
-                    if(oldPalletQty != stocktakingPallet.ActualPackageQuantity.Value)
+                    if (oldPalletQty != stocktakingPallet.ActualPackageQuantity.Value)
                     {
                         var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerStocktakingChange(
                         pallet,
@@ -518,9 +526,9 @@ namespace MilkDistributionWarehouse.Services
         {
             var users = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
             var checkUser = users?.FirstOrDefault(u => u.UserId == userId);
-            
+
             if (checkUser != null) return true;
-            
+
             return false;
         }
         private bool IsWarehouseStaff(StocktakingSheet sheet, int? userId)
@@ -605,7 +613,7 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(cancelChildMessage))
                 return cancelChildMessage;
 
-            if(!string.IsNullOrEmpty(note))
+            if (!string.IsNullOrEmpty(note))
             {
                 sheet.Note = note;
             }
@@ -702,7 +710,7 @@ namespace MilkDistributionWarehouse.Services
         private async Task<string> ValidationTransactionOrderInProgress()
         {
             var hasInProgressOrder = await _stocktakingSheetRepository.HasInProgressPurchaseOrder();
-            if(hasInProgressOrder)
+            if (hasInProgressOrder)
                 return "Hiện đang có đơn mua hàng Đang nhập kho. Vui lòng hoàn thành đơn mua hàng đó trước khi bắt đầu kiểm kê.".ToMessageForUser();
 
             var hasInProgressGIN = await _stocktakingSheetRepository.HasInProgressGIN();
