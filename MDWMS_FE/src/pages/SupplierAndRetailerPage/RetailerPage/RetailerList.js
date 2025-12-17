@@ -523,7 +523,7 @@ export default function RetailersPage() {
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Địa chỉ
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-40">
                         Trạng thái
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
