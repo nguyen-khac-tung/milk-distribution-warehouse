@@ -169,7 +169,7 @@ namespace MilkDistributionWarehouse.Services
             var purchaseOrderMapDetal = await purchaseOrderMap.FirstOrDefaultAsync();
 
             if (purchaseOrderMapDetal == null)
-                return ("PurchaseOrder is not found.", default);
+                return ("Đơn mua hàng không tìm thấy.", default);
 
             bool isDisableButton = true;
             if (role != null)
@@ -269,7 +269,7 @@ namespace MilkDistributionWarehouse.Services
                 var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(update.PurchaseOderId);
 
                 if (purchaseOrderExist == null)
-                    throw new Exception("PurchaseOrder is not exist.");
+                    throw new Exception("Đơn mua hàng không tìm thấy.");
 
                 if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
                     throw new Exception("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser());
