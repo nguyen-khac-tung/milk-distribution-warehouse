@@ -3,8 +3,7 @@
     "rewrite": "/index.html",
     "exclude": [
       "/images/*",
-      "/static/*",
-      "/*.{png,jpg,jpeg,gif,ico,svg}"
+      "/*.{png,jpg,jpeg,gif,ico}"
     ]
   },
   "routes": [
@@ -14,5 +13,10 @@
         "Cache-Control": "no-cache"
       }
     }
-  ]
+  ],
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html"
+    }
+  }
 }
