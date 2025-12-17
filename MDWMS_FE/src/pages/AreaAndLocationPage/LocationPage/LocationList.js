@@ -869,7 +869,7 @@ const LocationList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[150px]">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
                                                     onClick={() => handleSort("areaName")}
@@ -915,7 +915,7 @@ const LocationList = () => {
                                             </TableHead>
 
                                             {/* Hàng */}
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[20px]">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
                                                     onClick={() => handleSort("row")}
@@ -934,7 +934,7 @@ const LocationList = () => {
                                             </TableHead>
 
                                             {/* Cột */}
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[30px]">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
                                                     onClick={() => handleSort("column")}
@@ -951,10 +951,10 @@ const LocationList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48 w-[150px]">
                                                 Tình trạng
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48 w-[150px]">
                                                 Trạng thái
                                             </TableHead>
                                             {shouldShowActionColumn && (

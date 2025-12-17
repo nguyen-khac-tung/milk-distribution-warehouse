@@ -575,7 +575,7 @@ const AreaLists = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[450px]">
                                                 Mô tả
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
@@ -598,7 +598,7 @@ const AreaLists = () => {
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{area?.areaCode || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{area?.description || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700 w-[450px]">{area?.description || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
                                                             <PermissionWrapper

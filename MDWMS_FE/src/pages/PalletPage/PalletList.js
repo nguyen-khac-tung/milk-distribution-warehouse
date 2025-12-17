@@ -553,10 +553,10 @@ export default function PalletList() {
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             STT
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[150px]">
                                             Mã Pallet
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[100px]">
                                             Mã hàng hóa
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
@@ -573,7 +573,7 @@ export default function PalletList() {
                                                 )}
                                             </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("batchCode")}>
                                                 <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
