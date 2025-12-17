@@ -517,13 +517,13 @@ export default function RetailersPage() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-40">
                         Số điện thoại
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Địa chỉ
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                         Trạng thái
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
