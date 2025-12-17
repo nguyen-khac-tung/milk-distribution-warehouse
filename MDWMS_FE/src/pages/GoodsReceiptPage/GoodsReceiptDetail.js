@@ -772,7 +772,7 @@ export default function GoodsReceiptDetail() {
                         <Table className="w-full" style={{ tableLayout: 'fixed' }}>
                           <TableHeader>
                             <TableRow className="bg-gray-100">
-                              <TableHead className="font-semibold text-gray-700 w-[120px] min-w-0">Mã hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[90px] min-w-0">Mã hàng hóa</TableHead>
                               <TableHead className="font-semibold text-gray-700 w-[120px] min-w-0">Tên hàng hóa</TableHead>
                               <TableHead className="font-semibold text-gray-700 text-center">Đơn vị tính</TableHead>
                               <TableHead className="font-semibold text-gray-700 text-center">Quy cách đóng gói</TableHead>
@@ -1178,15 +1178,15 @@ export default function GoodsReceiptDetail() {
                                   })()}
                                 </TableHead>
                               )}
-                              <TableHead className="font-semibold text-green-900 w-[120px] min-w-0">Mã hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-green-900 w-[90px] min-w-0">Mã hàng hóa</TableHead>
                               <TableHead className="font-semibold text-green-900 w-[120px] min-w-0">Tên hàng hóa</TableHead>
-                              <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
-                              <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[80px]">Đơn vị tính</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[120px]">Quy cách đóng gói</TableHead>
                               <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng dự kiến</TableHead>
                               <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng giao đến</TableHead>
                               <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng trả lại</TableHead>
-                              <TableHead className="font-semibold text-green-900 text-center">SL thùng thực nhận</TableHead>
-                              <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[120px]">SL thùng thực nhận</TableHead>
+                              <TableHead className="font-semibold text-green-900 w-[90px]">Ghi chú</TableHead>
                               <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
                               {/* Cột Hành động: chỉ hiển thị cho nhân viên kho (không phải quản lý kho) */}
                               {(() => {
@@ -1513,7 +1513,7 @@ export default function GoodsReceiptDetail() {
                                 )}
                                 <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
                                 <TableHead className="font-semibold text-purple-900 min-w-[140px]">Tên hàng hóa</TableHead>
-                                <TableHead className="font-semibold text-purple-900 min-w-[120px]">Mã hàng hóa</TableHead>
+                                <TableHead className="font-semibold text-purple-900 min-w-[80px]">Mã hàng hóa</TableHead>
                                 <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                                 <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
                                 <TableHead className="font-semibold text-purple-900">Vị trí</TableHead>
