@@ -154,15 +154,10 @@ namespace MilkDistributionWarehouse.Services
 
             if (userRole != null)
             {
-                //stocktakingSheetMap.IsDiableButtonInProgress = userRole.Contains(RoleNames.WarehouseStaff) ? 
-                //    (stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
-                //|| !IsBeforeEditDeadline(stocktakingSheetMap.StartTime)) : true;
-                if(userRole.Contains(RoleNames.WarehouseStaff))
-                {
-                    stocktakingSheetMap.IsDiableButtonInProgress = !(stocktakingSheetMap.StocktakingAreas
-                        .Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
-                        && !IsBeforeEditDeadline(stocktakingSheetMap.StartTime));
-                }    
+                stocktakingSheetMap.IsDiableButtonInProgress = userRole.Contains(RoleNames.WarehouseStaff) ?
+                    !(stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
+                && !IsBeforeEditDeadline(stocktakingSheetMap.StartTime)) : true;
+
                 stocktakingSheetMap.CanViewStocktakingArea = userRole.Contains(RoleNames.WarehouseManager) || userRole.Contains(RoleNames.SalesManager)
                     ? stocktakingSheetDetail.StocktakingAreas.Any(sa => sa.StocktakingLocations.Any())
                     : stocktakingSheetDetail.StocktakingAreas.Any(sa =>
