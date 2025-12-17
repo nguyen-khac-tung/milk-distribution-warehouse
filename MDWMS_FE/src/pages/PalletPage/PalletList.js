@@ -556,11 +556,22 @@ export default function PalletList() {
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
                                             Mã Pallet
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[150px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
                                             Mã hàng hóa
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
-                                            Tên hàng hóa
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodName")}>
+                                                <span>Tên hàng hóa</span>
+                                                {sortField === "goodName" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("batchCode")}>
@@ -580,7 +591,18 @@ export default function PalletList() {
                                             Mã vị trí
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[100px]">
-                                            Số lượng thùng
+                                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("packageQuantity")}>
+                                                <span>Số lượng thùng</span>
+                                                {sortField === "packageQuantity" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Đơn vị /thùng
