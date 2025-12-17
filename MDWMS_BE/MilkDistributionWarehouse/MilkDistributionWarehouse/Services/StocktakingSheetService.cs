@@ -160,8 +160,8 @@ namespace MilkDistributionWarehouse.Services
             else
             {
                 stocktakingSheetMap.IsDiableButtonInProgress =
-                    stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
-                    || !IsBeforeEditDeadline(stocktakingSheetMap.StartTime);
+                    stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned);
+                    //|| !IsBeforeEditDeadline(stocktakingSheetMap.StartTime);
             }
 
             return ("", stocktakingSheetMap);
@@ -625,15 +625,30 @@ namespace MilkDistributionWarehouse.Services
             if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
             {
                 var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
-                return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
+
+                var days = remaining.Days;
+                var hours = remaining.Hours;
+                var minutes = remaining.Minutes;
+
+                var message = "Còn ";
+
+                if (days > 0)
+                    message += $"{days} ngày ";
+
+                if (hours > 0 || days > 0)
+                    message += $"{hours} giờ ";
+
+                message += $"{minutes} phút nữa đến thời gian bắt đầu kiểm kê.";
+
+                return message.ToMessageForUser();
             }
 
             if (sheet.Status == StocktakingStatus.Completed || sheet.Status == StocktakingStatus.Cancelled)
                 return "Không thể bắt đầu kiểm kê khi phiếu kiểm kê đã Hoàn thành hoặc Đã huỷ.".ToMessageForUser();
 
-            string message = await ValidationTransactionOrderInProgress();
-            if (!string.IsNullOrEmpty(message))
-                return message;
+            string messageValidation = await ValidationTransactionOrderInProgress();
+            if (!string.IsNullOrEmpty(messageValidation))
+                return messageValidation;
 
             if (inProgressStatus.StocktakingAreaId != Guid.Empty)
             {
