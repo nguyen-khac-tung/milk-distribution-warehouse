@@ -564,14 +564,18 @@ const SalesOrderList = () => {
         };
 
         if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM)) {
-            // Sales Manager - ẩn Assignee (không có quyền giao việc)
+            // Sales Manager - ẩn Assignee và Confirmer (Người phân công)
             return {
                 ...defaultConfig,
-                showAssignee: false
+                showAssignee: false,
+                showConfirmer: false
             };
         } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WM)) {
+            // Warehouse Manager - ẩn Người tạo và Người duyệt
             return {
                 ...defaultConfig,
+                showSeller: false,
+                showApprover: false
             };
         } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WS)) {
             // Warehouse Staff - filter cơ bản cho nhân viên kho
@@ -625,7 +629,7 @@ const SalesOrderList = () => {
                     <SaleOrderFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo nhà bán lẻ, người duyệt, người tạo..."
+                        searchPlaceholder="Tìm kiếm theo mã đơn hàng, nhà bán lẻ, người duyệt..."
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}

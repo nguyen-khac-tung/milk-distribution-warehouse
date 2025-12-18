@@ -36,13 +36,25 @@ const SalesOrderTable = ({
         }
 
         const firstItem = saleOrders[0];
+
+        // Ẩn cột theo role
+        const isSaleManager = hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM);
+        const isWarehouseManager = hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WM);
+
+        // Quản lý kinh doanh: ẩn "Người phân công"
+        const shouldHideAcknowledgedByName = isSaleManager;
+
+        // Quản lý kho: ẩn "Người tạo", "Người duyệt"
+        const shouldHideCreatedByName = isWarehouseManager;
+        const shouldHideApprovalByName = isWarehouseManager;
+
         return {
-            hasApprovalByName: firstItem.approvalByName !== undefined,
-            hasCreatedByName: firstItem.createdByName !== undefined,
-            hasAcknowledgedByName: firstItem.acknowledgedByName !== undefined,
+            hasApprovalByName: firstItem.approvalByName !== undefined && !shouldHideApprovalByName,
+            hasCreatedByName: firstItem.createdByName !== undefined && !shouldHideCreatedByName,
+            hasAcknowledgedByName: firstItem.acknowledgedByName !== undefined && !shouldHideAcknowledgedByName,
             hasAssignToName: firstItem.assignToName !== undefined,
         };
-    }, [saleOrders]);
+    }, [saleOrders, hasPermission]);
 
     const handleSort = (field) => {
         onSort(field);
@@ -80,6 +92,10 @@ const SalesOrderTable = ({
                                 {/* STT */}
                                 <TableHead className="font-semibold text-slate-900 px-2 py-2 text-center w-10">
                                     STT
+                                </TableHead>
+                                {/* mã bán hàng */}
+                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                    Mã bán hàng
                                 </TableHead>
 
                                 {/* Nhà bán lẻ */}
@@ -210,7 +226,7 @@ const SalesOrderTable = ({
                                     onClick={() => handleSort("createdAt")}
                                 >
                                     <div className="flex items-center justify-center space-x-2 cursor-pointer">
-                                        <span>Ngày tạo</span>
+                                        <span>Thời gian tạo</span>
                                         {sortField === "createdAt" ? (
                                             sortAscending ? (
                                                 <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -246,10 +262,16 @@ const SalesOrderTable = ({
                                         <TableCell className="text-center px-6 py-4">
                                             {(pagination.current - 1) * pagination.pageSize + index + 1}
                                         </TableCell>
+                                        {/* Mã bán hàng */}
+                                        <TableCell className="text-left text-slate-700 py-4 max-w-[200px] break-words whitespace-normal">
+                                            <span className="font-bold">
+                                                {order.salesOrderId || '-'}
+                                            </span>
+                                        </TableCell>
 
                                         {/* Nhà bán lẻ */}
                                         <TableCell className="text-left text-slate-700 px-6 py-4 max-w-[180px] break-words whitespace-normal">
-                                            <span className="font-bold">
+                                            <span>
                                                 {order.retailerName || order.retailerId || '-'}
                                             </span>
                                         </TableCell>
@@ -257,7 +279,9 @@ const SalesOrderTable = ({
                                         {/* Người tạo */}
                                         {availableFields.hasCreatedByName && (
                                             <TableCell className="text-center px-6 py-4">
-                                                {order.createdByName || "-"}
+                                                <span className="text-yellow-600 font-medium">
+                                                  {order.createdByName || "-"}
+                                                </span>
                                             </TableCell>
                                         )}
 
