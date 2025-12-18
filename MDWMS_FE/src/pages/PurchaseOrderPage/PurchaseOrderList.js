@@ -631,14 +631,18 @@ export default function PurchaseOrderList() {
     };
 
     if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
-      // Sales Manager - ẩn Assignee (không có quyền giao việc)
+      // Sales Manager - ẩn Assignee (không có quyền giao việc) và ẩn "Người xác nhận đến"
       return {
         ...defaultConfig,
-        showAssignee: false
+        showAssignee: false,
+        showConfirmer: false
       };
     } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
+      // Warehouse Manager - ẩn filter Người tạo và Người duyệt (2 cột đã ẩn ở bảng)
       return {
         ...defaultConfig,
+        showCreator: false,
+        showApprover: false
       };
     } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
       // Warehouse Staff - filter cơ bản cho nhân viên kho
@@ -736,7 +740,7 @@ export default function PurchaseOrderList() {
           <PurchaseOrderFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo nhà cung cấp..."
+            searchPlaceholder="Tìm kiếm theo mã đơn hàng, nhà cung cấp..."
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
