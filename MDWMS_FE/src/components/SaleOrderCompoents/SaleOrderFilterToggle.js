@@ -558,91 +558,6 @@ export default function SaleOrderFilterToggle({
                                         </div>
                                     )}
 
-                                    {/* Assignee Filter */}
-                                    {showAssignee && assignees.length > 0 && (
-                                        <div className="relative assignee-filter-dropdown flex-1 min-w-[160px]">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    const wasOpen = showAssigneeFilter;
-                                                    closeAllDropdownsExcept('assignee');
-                                                    // Use setTimeout to ensure state updates complete before toggling
-                                                    setTimeout(() => {
-                                                        setShowAssigneeFilter(!wasOpen);
-                                                    }, 0);
-                                                }}
-                                                className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
-                                                focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
-                                                ${assigneeFilter
-                                                        ? "bg-[#d97706] text-white hover:bg-[#d97706]"
-                                                        : "bg-white text-slate-700 hover:bg-slate-50"
-                                                    }`}
-                                            >
-                                                <Users className="h-4 w-4 flex-shrink-0" />
-                                                <span className="text-sm font-medium truncate">
-                                                    {assigneeFilter
-                                                        ? assignees.find(
-                                                            (a) => a.userId.toString() === assigneeFilter
-                                                        )?.fullName || "Chọn người được giao"
-                                                        : "Tất cả người được giao"}
-                                                </span>
-                                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                            </button>
-
-                                            {showAssigneeFilter && (
-                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
-                                                    <div className="p-2 border-b border-gray-200">
-                                                        <div className="relative">
-                                                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                                            <Input
-                                                                placeholder="Tìm kiếm người được giao"
-                                                                value={assigneeSearch}
-                                                                onChange={(e) => setAssigneeSearch(e.target.value)}
-                                                                className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="overflow-y-auto dropdown-scroll max-h-48">
-                                                        <div className="py-1">
-                                                            <button
-                                                                onClick={() => {
-                                                                    clearAssigneeFilter();
-                                                                    setShowAssigneeFilter(false);
-                                                                    setAssigneeSearch('');
-                                                                }}
-                                                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
-                                                            >
-                                                                Tất cả người được giao
-                                                            </button>
-                                                            {filterOptions(assignees, assigneeSearch, 'fullName').map((assignee) => (
-                                                                <button
-                                                                    key={assignee.userId}
-                                                                    onClick={() => {
-                                                                        onAssigneeFilter(assignee.userId.toString());
-                                                                        setShowAssigneeFilter(false);
-                                                                        setAssigneeSearch('');
-                                                                    }}
-                                                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${assigneeFilter ===
-                                                                        assignee.userId.toString()
-                                                                        ? "bg-orange-500 text-white"
-                                                                        : "text-slate-700"
-                                                                        }`}
-                                                                >
-                                                                    {assignee.fullName}
-                                                                </button>
-                                                            ))}
-                                                            {filterOptions(assignees, assigneeSearch, 'fullName').length === 0 && (
-                                                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                                                                    Không tìm thấy kết quả
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
 
                                 {/* Second Row */}
@@ -895,6 +810,92 @@ export default function SaleOrderFilterToggle({
                                                                 </button>
                                                             ))}
                                                             {filterOptions(confirmers, confirmerSearch, 'fullName').length === 0 && (
+                                                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                                                    Không tìm thấy kết quả
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Assignee Filter */}
+                                    {showAssignee && assignees.length > 0 && (
+                                        <div className="relative assignee-filter-dropdown flex-1 min-w-[160px]">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const wasOpen = showAssigneeFilter;
+                                                    closeAllDropdownsExcept('assignee');
+                                                    // Use setTimeout to ensure state updates complete before toggling
+                                                    setTimeout(() => {
+                                                        setShowAssigneeFilter(!wasOpen);
+                                                    }, 0);
+                                                }}
+                                                className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
+                                                focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                                                ${assigneeFilter
+                                                        ? "bg-[#d97706] text-white hover:bg-[#d97706]"
+                                                        : "bg-white text-slate-700 hover:bg-slate-50"
+                                                    }`}
+                                            >
+                                                <Users className="h-4 w-4 flex-shrink-0" />
+                                                <span className="text-sm font-medium truncate">
+                                                    {assigneeFilter
+                                                        ? assignees.find(
+                                                            (a) => a.userId.toString() === assigneeFilter
+                                                        )?.fullName || "Chọn người được giao"
+                                                        : "Tất cả người được giao"}
+                                                </span>
+                                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                                            </button>
+
+                                            {showAssigneeFilter && (
+                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                                                    <div className="p-2 border-b border-gray-200">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                            <Input
+                                                                placeholder="Tìm kiếm người được giao"
+                                                                value={assigneeSearch}
+                                                                onChange={(e) => setAssigneeSearch(e.target.value)}
+                                                                className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="overflow-y-auto dropdown-scroll max-h-48">
+                                                        <div className="py-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    clearAssigneeFilter();
+                                                                    setShowAssigneeFilter(false);
+                                                                    setAssigneeSearch('');
+                                                                }}
+                                                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                                                            >
+                                                                Tất cả người được giao
+                                                            </button>
+                                                            {filterOptions(assignees, assigneeSearch, 'fullName').map((assignee) => (
+                                                                <button
+                                                                    key={assignee.userId}
+                                                                    onClick={() => {
+                                                                        onAssigneeFilter(assignee.userId.toString());
+                                                                        setShowAssigneeFilter(false);
+                                                                        setAssigneeSearch('');
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${assigneeFilter ===
+                                                                        assignee.userId.toString()
+                                                                        ? "bg-orange-500 text-white"
+                                                                        : "text-slate-700"
+                                                                        }`}
+                                                                >
+                                                                    {assignee.fullName}
+                                                                </button>
+                                                            ))}
+                                                            {filterOptions(assignees, assigneeSearch, 'fullName').length === 0 && (
                                                                 <div className="px-3 py-2 text-sm text-gray-500 text-center">
                                                                     Không tìm thấy kết quả
                                                                 </div>

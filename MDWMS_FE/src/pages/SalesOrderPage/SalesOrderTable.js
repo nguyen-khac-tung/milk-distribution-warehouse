@@ -36,13 +36,25 @@ const SalesOrderTable = ({
         }
 
         const firstItem = saleOrders[0];
+
+        // Ẩn cột theo role
+        const isSaleManager = hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM);
+        const isWarehouseManager = hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WM);
+
+        // Quản lý kinh doanh: ẩn "Người phân công"
+        const shouldHideAcknowledgedByName = isSaleManager;
+
+        // Quản lý kho: ẩn "Người tạo", "Người duyệt"
+        const shouldHideCreatedByName = isWarehouseManager;
+        const shouldHideApprovalByName = isWarehouseManager;
+
         return {
-            hasApprovalByName: firstItem.approvalByName !== undefined,
-            hasCreatedByName: firstItem.createdByName !== undefined,
-            hasAcknowledgedByName: firstItem.acknowledgedByName !== undefined,
+            hasApprovalByName: firstItem.approvalByName !== undefined && !shouldHideApprovalByName,
+            hasCreatedByName: firstItem.createdByName !== undefined && !shouldHideCreatedByName,
+            hasAcknowledgedByName: firstItem.acknowledgedByName !== undefined && !shouldHideAcknowledgedByName,
             hasAssignToName: firstItem.assignToName !== undefined,
         };
-    }, [saleOrders]);
+    }, [saleOrders, hasPermission]);
 
     const handleSort = (field) => {
         onSort(field);
@@ -80,6 +92,10 @@ const SalesOrderTable = ({
                                 {/* STT */}
                                 <TableHead className="font-semibold text-slate-900 px-2 py-2 text-center w-10">
                                     STT
+                                </TableHead>
+                                {/* mã bán hàng */}
+                                <TableHead className="font-semibold text-slate-900 px-2 py-2 w-10">
+                                    Mã bán hàng
                                 </TableHead>
 
                                 {/* Nhà bán lẻ */}
@@ -245,6 +261,12 @@ const SalesOrderTable = ({
                                         {/* STT */}
                                         <TableCell className="text-center px-6 py-4">
                                             {(pagination.current - 1) * pagination.pageSize + index + 1}
+                                        </TableCell>
+                                        {/* Mã bán hàng */}
+                                        <TableCell className="text-left text-slate-700 py-4 max-w-[200px] break-words whitespace-normal">
+                                            <span className="font-bold">
+                                                {order.salesOrderId || '-'}
+                                            </span>
                                         </TableCell>
 
                                         {/* Nhà bán lẻ */}
