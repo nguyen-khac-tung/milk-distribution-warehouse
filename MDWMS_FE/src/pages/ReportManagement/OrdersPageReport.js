@@ -790,7 +790,7 @@ export default function OrdersPage({ onClose }) {
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                         STT
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[140px]">
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[100px]">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodsCode")}>
                           <span>Mã hàng hóa</span>
                           {sortField === "goodsCode" ? (
@@ -833,7 +833,19 @@ export default function OrdersPage({ onClose }) {
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[120px]">
-                        {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
+                        {/* {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"} */}
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort(activeOrderType === "purchase" ? "receiptDate" : "issueDate")}>
+                          <span>{activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}</span>
+                          {sortField === (activeOrderType === "purchase" ? "receiptDate" : "issueDate") ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[140px]">
                         Đơn vị/thùng

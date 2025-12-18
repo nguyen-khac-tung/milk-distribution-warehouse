@@ -553,11 +553,33 @@ export default function PalletList() {
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             STT
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
-                                            Mã Pallet
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[150px]">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("palletId")}>
+                                                <span>Mã Pallet</span>
+                                                {sortField === "palletId" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
-                                            Mã hàng hóa
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[110px]">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodCode")}>
+                                                <span>Mã hàng hóa</span>
+                                                {sortField === "goodCode" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodName")}>
@@ -573,7 +595,7 @@ export default function PalletList() {
                                                 )}
                                             </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("batchCode")}>
                                                 <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
@@ -588,7 +610,18 @@ export default function PalletList() {
                                             </div>
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
-                                            Mã vị trí
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("locationCode")}>
+                                                <span>Mã vị trí</span>
+                                                {sortField === "locationCode" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[100px]">
                                             <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("packageQuantity")}>

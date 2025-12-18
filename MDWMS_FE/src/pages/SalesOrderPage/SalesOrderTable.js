@@ -187,10 +187,10 @@ const SalesOrderTable = ({
 
                                 {/* Thời gian xuất kho */}
                                 <TableHead
-                                    className="font-semibold text-slate-900 px-6 py-3 text-center"
+                                    className="font-semibold text-slate-900 px-6 py-3 text-center "
                                     onClick={() => handleSort("estimatedTimeDeparture")}
                                 >
-                                    <div className="flex items-center justify-center space-x-2 cursor-pointer max-w-[100px]">
+                                    <div className="flex items-center justify-center space-x-2 cursor-pointer ">
                                         <span>Thời gian xuất kho</span>
                                         {sortField === "estimatedTimeDeparture" ? (
                                             sortAscending ? (
