@@ -310,7 +310,7 @@ export default function PurchaseOrderFilterToggle({
       {showSearchFilter && (
         <div className="bg-gray-50 border-b border-slate-200 px-8 py-4 relative overflow-visible">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            <div className="flex-1 w-full lg:w-5/6">
+            <div className="flex-1 w-full lg:w-11/12">
               <div className="space-y-3">
                 {/* First Row - Search and 2 Main Filters */}
                 <div className="flex flex-wrap gap-2 sm:gap-3 relative overflow-visible">
@@ -425,8 +425,8 @@ export default function PurchaseOrderFilterToggle({
                           {/* Dropdown List */}
                           <div className="py-1 overflow-y-auto dropdown-scroll max-h-48">
                             <button
-                              onClick={() => { 
-                                clearSupplierFilter(); 
+                              onClick={() => {
+                                clearSupplierFilter();
                                 setShowSupplierFilter(false);
                                 setSupplierSearchTerm("");
                               }}
@@ -437,8 +437,8 @@ export default function PurchaseOrderFilterToggle({
                             {filteredSuppliers.length > 0 ? filteredSuppliers.map((supplier) => (
                               <button
                                 key={supplier.supplierId}
-                                onClick={() => { 
-                                  onSupplierFilter(supplier.supplierId.toString()); 
+                                onClick={() => {
+                                  onSupplierFilter(supplier.supplierId.toString());
                                   setShowSupplierFilter(false);
                                   setSupplierSearchTerm("");
                                 }}
@@ -498,8 +498,8 @@ export default function PurchaseOrderFilterToggle({
                           {/* Dropdown List */}
                           <div className="py-1 overflow-y-auto dropdown-scroll max-h-48">
                             <button
-                              onClick={() => { 
-                                clearApproverFilter(); 
+                              onClick={() => {
+                                clearApproverFilter();
                                 setShowApproverFilter(false);
                                 setApproverSearchTerm("");
                               }}
@@ -510,8 +510,8 @@ export default function PurchaseOrderFilterToggle({
                             {filteredApprovers.length > 0 ? filteredApprovers.map((approver) => (
                               <button
                                 key={approver.userId}
-                                onClick={() => { 
-                                  onApproverFilter(approver.userId.toString()); 
+                                onClick={() => {
+                                  onApproverFilter(approver.userId.toString());
                                   setShowApproverFilter(false);
                                   setApproverSearchTerm("");
                                 }}
@@ -567,8 +567,8 @@ export default function PurchaseOrderFilterToggle({
                           {/* Dropdown List */}
                           <div className="py-1 overflow-y-auto dropdown-scroll max-h-48">
                             <button
-                              onClick={() => { 
-                                clearCreatorFilter(); 
+                              onClick={() => {
+                                clearCreatorFilter();
                                 setShowCreatorFilter(false);
                                 setCreatorSearchTerm("");
                               }}
@@ -579,8 +579,8 @@ export default function PurchaseOrderFilterToggle({
                             {filteredCreators.length > 0 ? filteredCreators.map((creator) => (
                               <button
                                 key={creator.userId}
-                                onClick={() => { 
-                                  onCreatorFilter(creator.userId.toString()); 
+                                onClick={() => {
+                                  onCreatorFilter(creator.userId.toString());
                                   setShowCreatorFilter(false);
                                   setCreatorSearchTerm("");
                                 }}
@@ -637,8 +637,8 @@ export default function PurchaseOrderFilterToggle({
                           {/* Dropdown List */}
                           <div className="py-1 overflow-y-auto dropdown-scroll max-h-48">
                             <button
-                              onClick={() => { 
-                                clearConfirmerFilter(); 
+                              onClick={() => {
+                                clearConfirmerFilter();
                                 setShowConfirmerFilter(false);
                                 setConfirmerSearchTerm("");
                               }}
@@ -649,8 +649,8 @@ export default function PurchaseOrderFilterToggle({
                             {filteredConfirmers.length > 0 ? filteredConfirmers.map((confirmer) => (
                               <button
                                 key={confirmer.userId}
-                                onClick={() => { 
-                                  onConfirmerFilter(confirmer.userId.toString()); 
+                                onClick={() => {
+                                  onConfirmerFilter(confirmer.userId.toString());
                                   setShowConfirmerFilter(false);
                                   setConfirmerSearchTerm("");
                                 }}
@@ -707,8 +707,8 @@ export default function PurchaseOrderFilterToggle({
                           {/* Dropdown List */}
                           <div className="py-1 overflow-y-auto dropdown-scroll max-h-48">
                             <button
-                              onClick={() => { 
-                                clearAssigneeFilter(); 
+                              onClick={() => {
+                                clearAssigneeFilter();
                                 setShowAssigneeFilter(false);
                                 setAssigneeSearchTerm("");
                               }}
@@ -719,8 +719,8 @@ export default function PurchaseOrderFilterToggle({
                             {filteredAssignees.length > 0 ? filteredAssignees.map((assignee) => (
                               <button
                                 key={assignee.userId}
-                                onClick={() => { 
-                                  onAssigneeFilter(assignee.userId.toString()); 
+                                onClick={() => {
+                                  onAssigneeFilter(assignee.userId.toString());
                                   setShowAssigneeFilter(false);
                                   setAssigneeSearchTerm("");
                                 }}
@@ -782,22 +782,22 @@ export default function PurchaseOrderFilterToggle({
                           </div>
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => { 
+                              onClick={() => {
                                 if (clearDateRangeFilter) {
                                   clearDateRangeFilter();
                                 }
-                                setShowDateRangeFilter(false); 
+                                setShowDateRangeFilter(false);
                               }}
                               className="flex-1 px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
                             >
                               Xóa
                             </button>
                             <button
-                              onClick={() => { 
+                              onClick={() => {
                                 if (applyDateRangeFilter) {
                                   applyDateRangeFilter();
                                 }
-                                setShowDateRangeFilter(false); 
+                                setShowDateRangeFilter(false);
                               }}
                               className="flex-1 px-3 py-2 text-sm bg-[#d97706] text-white rounded-lg hover:bg-[#b8650f]"
                             >
@@ -814,7 +814,7 @@ export default function PurchaseOrderFilterToggle({
 
             {/* Clear Filters Button */}
             {showClearButton && (
-              <div className="w-full lg:w-1/6 flex justify-end">
+              <div className="w-full lg:w-1/12 flex justify-end">
                 <ClearFiltersButton
                   onClear={handleClearAll}
                   hasActiveFilters={hasActiveFilters}

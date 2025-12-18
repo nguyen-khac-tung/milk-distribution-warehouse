@@ -169,7 +169,7 @@ namespace MilkDistributionWarehouse.Services
             var purchaseOrderMapDetal = await purchaseOrderMap.FirstOrDefaultAsync();
 
             if (purchaseOrderMapDetal == null)
-                return ("PurchaseOrder is not found.", default);
+                return ("Đơn mua hàng không tìm thấy.", default);
 
             bool isDisableButton = true;
             if (role != null)
@@ -269,7 +269,7 @@ namespace MilkDistributionWarehouse.Services
                 var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(update.PurchaseOderId);
 
                 if (purchaseOrderExist == null)
-                    throw new Exception("PurchaseOrder is not exist.");
+                    throw new Exception("Đơn mua hàng không tìm thấy.");
 
                 if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
                     throw new Exception("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser());
@@ -405,8 +405,8 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     var today = DateTimeUtility.Now();
-                    if (purchaseOrderOrderedDto.EstimatedTimeArrival < today)
-                        throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.".ToMessageForUser());
+                    if (purchaseOrderOrderedDto.EstimatedTimeArrival.Date < today.Date)
+                        throw new Exception("Ngày dự kiến giao hàng phải là ngày hiện tài hoặc trong tương lai.".ToMessageForUser());
 
                     purchaseOrder.Status = PurchaseOrderStatus.Ordered;
                     purchaseOrder.EstimatedTimeArrival = purchaseOrderOrderedDto.EstimatedTimeArrival;
@@ -425,8 +425,8 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     var today = DateTimeUtility.Now();
-                    if (orderOrderedUpdateDto.EstimatedTimeArrival < today)
-                        throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.".ToMessageForUser());
+                    if (orderOrderedUpdateDto.EstimatedTimeArrival.Date < today.Date)
+                        throw new Exception("Ngày dự kiến giao hàng phải là ngày hiện tài hoặc trong tương lai.".ToMessageForUser());
 
                     if (string.IsNullOrEmpty(orderOrderedUpdateDto.DeliveryDateChangeReason))
                         throw new Exception("Thay đổi ngày dự kiến hàng cần phải có lý do.".ToMessageForUser());
@@ -445,14 +445,20 @@ namespace MilkDistributionWarehouse.Services
                         "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
                         "Bạn không có quyền thực hiện chức năng này");
 
-                    var estimatedTimeArrival = purchaseOrder.EstimatedTimeArrival;
-                    var today = DateTimeUtility.Now();
 
                     if (currentStatus != PurchaseOrderStatus.Ordered && currentStatus != PurchaseOrderStatus.AwaitingArrival)
                         throw new Exception("Chỉ được xác nhận đơn hàng đã đến khi đơn hàng ở trạng thái Đã đặt hàng hoặc Chờ đến.".ToMessageForUser());
+                    
+                    var estimatedTimeArrival = purchaseOrder.EstimatedTimeArrival;
+                    var todayDate = DateOnly.FromDateTime(DateTimeUtility.Now());
 
-                    //if(estimatedTimeArrival != null && estimatedTimeArrival > today)
-                    //    throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
+                    if (estimatedTimeArrival.HasValue)
+                    {
+                        var estimatedDate = DateOnly.FromDateTime(estimatedTimeArrival.Value);
+
+                        if (estimatedDate > todayDate)
+                            throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
+                    }
 
                     purchaseOrder.Status = currentStatus == PurchaseOrderStatus.AwaitingArrival ?
                         PurchaseOrderStatus.AssignedForReceiving : PurchaseOrderStatus.GoodsReceived;

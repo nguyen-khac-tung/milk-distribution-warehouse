@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { getPallets, deletePallet } from "../../services/PalletService";
-import { getUserDropDownByRoleName } from "../../services/AccountService";
+
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
@@ -39,9 +39,7 @@ export default function PalletList() {
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
     const [showStatusFilter, setShowStatusFilter] = useState(false)
-    const [creatorFilter, setCreatorFilter] = useState("")
-    const [showCreatorFilter, setShowCreatorFilter] = useState(false)
-    const [creators, setCreators] = useState([])
+
     const [sortField, setSortField] = useState("")
     const [sortAscending, setSortAscending] = useState(true)
     const [isInitialMount, setIsInitialMount] = useState(true)
@@ -64,7 +62,7 @@ export default function PalletList() {
     const [isInitialized, setIsInitialized] = useState(false)
     const [hasUserInteracted, setHasUserInteracted] = useState(false)
     const [statusSearchQuery, setStatusSearchQuery] = useState("")
-    const [creatorSearchQuery, setCreatorSearchQuery] = useState("")
+
     const [totalStats, setTotalStats] = useState({
         totalCount: 0,
         activeCount: 0,
@@ -153,8 +151,7 @@ export default function PalletList() {
                 search: normalizedSearch,
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
-                status: searchParams.status,
-                creatorId: searchParams.creatorId
+                status: searchParams.status
             })
 
             if (response && response.data) {
@@ -182,7 +179,6 @@ export default function PalletList() {
             // Reset tất cả filter và sort về mặc định
             setSearchQuery("")
             setStatusFilter("")
-            setCreatorFilter("")
             setSortField("")
             setSortAscending(true)
             setPagination({
@@ -192,14 +188,7 @@ export default function PalletList() {
             })
 
             // Load danh sách người tạo
-            try {
-                const creatorsResponse = await getUserDropDownByRoleName("Warehouse Staff");
-                if (creatorsResponse && creatorsResponse.data) {
-                    setCreators(creatorsResponse.data);
-                }
-            } catch (error) {
-                console.error("Error loading creators:", error);
-            }
+
 
             // Fetch dữ liệu thống kê tổng (không filter)
             await fetchStatsData();
@@ -211,8 +200,7 @@ export default function PalletList() {
                 search: "",
                 sortField: "",
                 sortAscending: true,
-                status: "",
-                creatorId: ""
+                status: ""
             })
 
             // Mark as initialized after all data is loaded
@@ -227,10 +215,7 @@ export default function PalletList() {
                 setShowStatusFilter(false)
                 setStatusSearchQuery("")
             }
-            if (showCreatorFilter && !event.target.closest('.creator-filter-dropdown')) {
-                setShowCreatorFilter(false)
-                setCreatorSearchQuery("")
-            }
+
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false)
             }
@@ -239,7 +224,7 @@ export default function PalletList() {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
-    }, [showStatusFilter, showCreatorFilter, showPageSizeFilter])
+    }, [showStatusFilter, showPageSizeFilter])
 
     useEffect(() => {
         if (!isInitialized) {
@@ -262,7 +247,7 @@ export default function PalletList() {
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
-                creatorId: creatorFilter
+                status: statusFilter
             }
             fetchData(params)
             setPagination(prev => ({ ...prev, pageNumber: 1 }))
@@ -271,7 +256,7 @@ export default function PalletList() {
         return () => {
             clearTimeout(timeoutId)
         }
-    }, [searchQuery, statusFilter, creatorFilter, sortField, sortAscending, isInitialized, hasUserInteracted])
+    }, [searchQuery, statusFilter, sortField, sortAscending, isInitialized, hasUserInteracted])
 
     // Track search query changes to detect user interaction
     useEffect(() => {
@@ -394,8 +379,7 @@ export default function PalletList() {
                 search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
-                status: statusFilter,
-                creatorId: creatorFilter
+                status: statusFilter
             })
         } catch (error) {
             console.error("Error deleting pallet:", error)
@@ -423,14 +407,7 @@ export default function PalletList() {
         )
     }, [statusSearchQuery])
 
-    const filteredCreators = useMemo(() => {
-        if (!creatorSearchQuery) return creators
-        const normalizedQuery = normalize(creatorSearchQuery)
-        return creators.filter(creator => {
-            const creatorName = normalize(creator.fullName || "")
-            return creatorName.includes(normalizedQuery)
-        })
-    }, [creators, creatorSearchQuery])
+
 
     const handleStatusFilter = (status) => {
         setHasUserInteracted(true)
@@ -444,27 +421,13 @@ export default function PalletList() {
         setShowStatusFilter(false)
         setStatusSearchQuery("")
     }
-    const handleCreatorFilter = (creatorId) => {
-        setHasUserInteracted(true)
-        setCreatorFilter(creatorId)
-        setShowCreatorFilter(false)
-        setCreatorSearchQuery("")
-    }
-    const clearCreatorFilter = () => {
-        setHasUserInteracted(true)
-        setCreatorFilter("")
-        setShowCreatorFilter(false)
-        setCreatorSearchQuery("")
-    }
+
     const handleClearAllFilters = () => {
         setHasUserInteracted(true)
         setSearchQuery("")
         setStatusFilter("")
         setStatusSearchQuery("")
-        setCreatorFilter("")
-        setCreatorSearchQuery("")
         setShowStatusFilter(false)
-        setShowCreatorFilter(false)
     }
     const clearAllFilters = handleClearAllFilters
     const handlePageSizeChange = (newPageSize) => {
@@ -478,8 +441,7 @@ export default function PalletList() {
             search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
-            status: statusFilter,
-            creatorId: creatorFilter
+            status: statusFilter
         })
     }
     const handleSort = (field) => {
@@ -541,7 +503,7 @@ export default function PalletList() {
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo mã batch hoặc mã vị trí..."
+                        searchPlaceholder="Tìm kiếm theo mã batch, mã vị trí, mã hàng hóa hoặc tên hàng hóa..."
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
@@ -557,17 +519,6 @@ export default function PalletList() {
                         statusSearchQuery={statusSearchQuery}
                         setStatusSearchQuery={setStatusSearchQuery}
                         filteredStatusOptions={filteredStatusOptions}
-                        creatorFilter={creatorFilter}
-                        setCreatorFilter={setCreatorFilter}
-                        showCreatorFilter={showCreatorFilter}
-                        setShowCreatorFilter={setShowCreatorFilter}
-                        creators={creators}
-                        onCreatorFilter={handleCreatorFilter}
-                        clearCreatorFilter={clearCreatorFilter}
-                        enableCreatorSearch={true}
-                        creatorSearchQuery={creatorSearchQuery}
-                        setCreatorSearchQuery={setCreatorSearchQuery}
-                        filteredCreators={filteredCreators}
                         onClearAll={handleClearAllFilters}
                         searchWidth="w-80"
                         showToggle={true}
@@ -599,13 +550,52 @@ export default function PalletList() {
                                                 />
                                             </TableHead>
                                         )}
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             STT
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
-                                            Mã Pallet
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[150px]">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("palletId")}>
+                                                <span>Mã Pallet</span>
+                                                {sortField === "palletId" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[110px]">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodCode")}>
+                                                <span>Mã hàng hóa</span>
+                                                {sortField === "goodCode" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodName")}>
+                                                <span>Tên hàng hóa</span>
+                                                {sortField === "goodName" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[120px]">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("batchCode")}>
                                                 <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
@@ -620,17 +610,37 @@ export default function PalletList() {
                                             </div>
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
-                                            Mã vị trí
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("locationCode")}>
+                                                <span>Mã vị trí</span>
+                                                {sortField === "locationCode" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
-                                            Số lượng thùng
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[100px]">
+                                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("packageQuantity")}>
+                                                <span>Số lượng thùng</span>
+                                                {sortField === "packageQuantity" ? (
+                                                    sortAscending ? (
+                                                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                    ) : (
+                                                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                    )
+                                                ) : (
+                                                    <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                )}
+                                            </div>
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Đơn vị /thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[100px]">
-                                            Người tạo
-                                        </TableHead>
+
                                         <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Trạng thái
                                         </TableHead>
@@ -659,9 +669,19 @@ export default function PalletList() {
                                                 <TableCell className="px-2 py-4 text-center text-slate-700">
                                                     {(pagination.pageNumber - 1) * pagination.pageSize + index + 1}
                                                 </TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                                                <TableCell className="px-2 py-4 text-slate-700 font-medium">
                                                     <div className="break-words whitespace-normal">
                                                         {pallet?.palletId || ''}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700 font-medium">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.goodCode || ''}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.goodName || ''}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-4 py-4 text-slate-700 font-medium">
@@ -680,11 +700,7 @@ export default function PalletList() {
                                                 <TableCell className="px-6 py-4 text-center text-slate-700">
                                                     {pallet?.unitPerPackage || 0}
                                                 </TableCell>
-                                                <TableCell className="px-4 py-4 text-slate-700">
-                                                    <div className="break-words whitespace-normal">
-                                                        {pallet?.createByName || ''}
-                                                    </div>
-                                                </TableCell>
+
                                                 <TableCell className="px-6 py-4 text-center">
                                                     <div className="flex justify-center">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 break-words whitespace-normal ${pallet?.status === 1
@@ -737,14 +753,14 @@ export default function PalletList() {
                                             icon={Package}
                                             title="Không tìm thấy pallet nào"
                                             description={
-                                                searchQuery || statusFilter || creatorFilter
+                                                searchQuery || statusFilter
                                                     ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
                                                     : "Chưa có pallet nào trong hệ thống"
                                             }
                                             actionText="Xóa bộ lọc"
                                             onAction={clearAllFilters}
-                                            showAction={!!(searchQuery || statusFilter || creatorFilter)}
-                                            colSpan={hasPrintPermission ? 10 : 9}
+                                            showAction={!!(searchQuery || statusFilter)}
+                                            colSpan={hasPrintPermission ? 11 : 10}
                                         />
                                     )}
                                 </TableBody>
@@ -777,8 +793,7 @@ export default function PalletList() {
                                                         search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
-                                                        status: statusFilter,
-                                                        creatorId: creatorFilter
+                                                        status: statusFilter
                                                     })
                                                     setPagination(prev => ({ ...prev, pageNumber: prev.pageNumber - 1 }))
                                                 }
@@ -803,8 +818,7 @@ export default function PalletList() {
                                                         search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
-                                                        status: statusFilter,
-                                                        creatorId: creatorFilter
+                                                        status: statusFilter
                                                     })
                                                     setPagination(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }))
                                                 }

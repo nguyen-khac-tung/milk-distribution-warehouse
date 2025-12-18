@@ -140,8 +140,8 @@ namespace MilkDistributionWarehouse.Services
 
             var pallets = await _palletRepository.GetActivePalletIdsByLocationId(locationIds);
 
-            if (!pallets.Any())
-                return ("Dữ liệu kệ kê hàng trống.", default);
+            //if (!pallets.Any())
+            //    return ("Dữ liệu kệ kê hàng trống.", default);
 
             List<StocktakingPallet> stocktakingPallets = new List<StocktakingPallet>();
 
@@ -160,8 +160,8 @@ namespace MilkDistributionWarehouse.Services
             }
 
             var createResult = await _stocktakingPalletRepository.CreateStocktakingPalletBulk(stocktakingPallets);
-            if (createResult == 0)
-                return ("Tạo kiểm kê kệ kê hàng thất bại.", default);
+            //if (createResult == 0)
+            //    return ("Tạo kiểm kê kệ kê hàng thất bại.", default);
 
             return ("", creates);
         }

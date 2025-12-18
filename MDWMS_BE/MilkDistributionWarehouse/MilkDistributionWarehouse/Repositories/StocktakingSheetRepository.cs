@@ -11,11 +11,15 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<StocktakingSheet> GetStocktakingSheet();
         Task<StocktakingSheet?> GetStocktakingSheetById(string stocktakingSheetId);
         Task<StocktakingSheet?> GetStocktakingSheetForDeleteById(string stocktakingSheetId);
+        Task<StocktakingSheet?> GetStocktakingSheetByStocktakingId(string stocktakingSheetId);
         Task<int> CreateStocktakingSheet(StocktakingSheet create);
         Task<int> UpdateStockingtakingSheet(StocktakingSheet update);
         Task<int> DeleteStocktakingSheet(StocktakingSheet delete);
         Task<bool> IsDuplicationStartTimeStocktakingSheet(string? stocktakingSheetId, DateTime startTime);
         Task<bool> HasActiveStocktakingInProgressAsync();
+        Task<bool> HasInProgressPurchaseOrder();
+        Task<bool> HasInProgressGIN();
+        Task<bool> HasInProgressDisposalNote();
     }
     public class StocktakingSheetRepository : IStocktakingSheetRepository
     {
@@ -46,6 +50,30 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(ss => ss.StocktakingAreas)
                     .ThenInclude(sa => sa.Area)
                         .ThenInclude(a => a.Locations)
+
+                .AsSplitQuery()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ss => ss.StocktakingSheetId.Equals(stocktakingSheetId));
+        }
+
+        public async Task<StocktakingSheet?> GetStocktakingSheetByStocktakingId(string stocktakingSheetId)
+        {
+            return await _context.StocktakingSheets
+
+                .Include(ss => ss.CreatedByNavigation)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.AssignToNavigation)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.Area)
+                        .ThenInclude(a => a.StorageCondition)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.Area)
+                        .ThenInclude(a => a.Locations)
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.StocktakingLocations)
 
                 .AsSplitQuery()
                 .AsNoTracking()
@@ -135,11 +163,33 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasActiveStocktakingInProgressAsync()
         {
-            //return await _context.StocktakingSheets
-            //    .AnyAsync(ss => ss.Status == StocktakingStatus.InProgress 
-            //        || ss.Status == StocktakingStatus.PendingApproval 
-            //        || ss.Status == StocktakingStatus.Approved);
-            return false;
+            return await _context.StocktakingSheets
+                .Include(ss => ss.StocktakingAreas)
+                .AnyAsync(ss => (ss.StocktakingAreas.Any() && ss.StocktakingAreas.Any(sa => sa.Status == StockAreaStatus.Pending)) ||
+                    ss.Status == StocktakingStatus.InProgress ||
+                    ss.Status == StocktakingStatus.PendingApproval ||
+                    ss.Status == StocktakingStatus.Approved);
+            //return false;
+        }
+
+        public async Task<bool> HasInProgressPurchaseOrder()
+        {
+            return await _context.PurchaseOrders
+                .AnyAsync(po => po.Status == PurchaseOrderStatus.Inspected);
+        }
+
+        public async Task<bool> HasInProgressGIN()
+        {
+            return await _context.GoodsIssueNotes
+                .AnyAsync(gin => gin.Status == GoodsIssueNoteStatus.Picking
+                        || gin.Status == GoodsIssueNoteStatus.PendingApproval);
+        }
+
+        public async Task<bool> HasInProgressDisposalNote()
+        {
+            return await _context.DisposalNotes
+                .AnyAsync(dn => dn.Status == DisposalNoteStatus.Picking
+                        || dn.Status == DisposalNoteStatus.PendingApproval);
         }
     }
 }

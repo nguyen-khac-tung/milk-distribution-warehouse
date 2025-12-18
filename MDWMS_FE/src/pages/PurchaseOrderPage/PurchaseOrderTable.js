@@ -25,6 +25,8 @@ const PurchaseOrderTable = ({
 }) => {
   const { hasPermission } = usePermissions();
   const navigate = useNavigate();
+  const isSalesManager = hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM);
+  const isWarehouseManager = hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM);
 
   // Handle goods receipt action based on status
   const handleGoodsReceiptClick = async (order) => {
@@ -87,6 +89,18 @@ const PurchaseOrderTable = ({
     return fields;
   }, [purchaseOrders]);
 
+  const visibleExtraFieldCount = React.useMemo(() => {
+    // Count how many optional columns are actually visible
+    return Object.entries(availableFields).reduce((count, [key, value]) => {
+      if (!value) return count;
+      // Hide "Người xác nhận đến" column for Sales Manager
+      if (isSalesManager && key === 'hasArrivalConfirmedByName') return count;
+      // Hide "Người tạo" và "Người duyệt" cho Warehouse Manager
+      if (isWarehouseManager && (key === 'hasCreatedByName' || key === 'hasApprovalByName')) return count;
+      return count + 1;
+    }, 0);
+  }, [availableFields, isSalesManager, isWarehouseManager]);
+
   const handleSort = (field) => {
     onSort(field);
   };
@@ -124,12 +138,15 @@ const PurchaseOrderTable = ({
           <Table className="w-full">
             <TableHeader>
               <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                <TableHead className="font-semibold text-slate-900 px-4 py-2 text-center w-10">
+                <TableHead className="font-semibold text-slate-900 px-1 py-1 text-center w-6">
                   STT
+                </TableHead>
+                <TableHead className="font-semibold text-slate-900 px-4 py-2 min-w-[100px]">
+                  Mã mua hàng
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                   <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("supplierId")}>
-                    <span>Tên nhà cung cấp</span>
+                    <span>Nhà cung cấp</span>
                     {sortField === "supplierId" ? (
                       sortAscending ? (
                         <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -141,7 +158,7 @@ const PurchaseOrderTable = ({
                     )}
                   </div>
                 </TableHead>
-                {availableFields.hasCreatedByName && (
+                {availableFields.hasCreatedByName && !isWarehouseManager && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
                       <span>Người tạo</span>
@@ -157,7 +174,7 @@ const PurchaseOrderTable = ({
                     </div>
                   </TableHead>
                 )}
-                {availableFields.hasApprovalByName && (
+                {availableFields.hasApprovalByName && !isWarehouseManager && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("approvalBy")}>
                       <span>Người duyệt</span>
@@ -173,7 +190,7 @@ const PurchaseOrderTable = ({
                     </div>
                   </TableHead>
                 )}
-                {availableFields.hasArrivalConfirmedByName && (
+                {availableFields.hasArrivalConfirmedByName && !isSalesManager && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("arrivalConfirmedBy")}>
                       <span>Người xác nhận đến</span>
@@ -219,7 +236,7 @@ const PurchaseOrderTable = ({
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[120px]">
+                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center min-w-[90px]">
                   <span>Trạng thái</span>
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
@@ -234,20 +251,23 @@ const PurchaseOrderTable = ({
                     key={index}
                     className="hover:bg-slate-50 border-b border-slate-200 min-h-[60px]"
                   >
-                    <TableCell className="px-6 py-4 text-slate-600 font-medium text-center">
+                    <TableCell className="px-2 py-4 text-slate-600 font-medium text-center">
                       {(pagination.current - 1) * pagination.pageSize + index + 1}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-slate-700 font-bold">
+                      {order.purchaseOderId || '-'}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-slate-700 text-left">
                       <span className="font-bold">
                         {order.supplierName || order.supplierId || '-'}
                       </span>
                     </TableCell>
-                    {availableFields.hasCreatedByName && (
+                    {availableFields.hasCreatedByName && !isWarehouseManager && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
                         {order.createdByName || order.createdBy || '-'}
                       </TableCell>
                     )}
-                    {availableFields.hasApprovalByName && (
+                    {availableFields.hasApprovalByName && !isWarehouseManager && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
                         {order.approvalByName || order.approvalBy ? (
                           <span className="text-green-600 font-medium">
@@ -258,7 +278,7 @@ const PurchaseOrderTable = ({
                         )}
                       </TableCell>
                     )}
-                    {availableFields.hasArrivalConfirmedByName && (
+                    {availableFields.hasArrivalConfirmedByName && !isSalesManager && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
                         {order.arrivalConfirmedByName || order.arrivalConfirmedBy ? (
                           <span className="text-blue-600 font-medium">
@@ -288,7 +308,7 @@ const PurchaseOrderTable = ({
                         return `${time} ${dateStr}`;
                       })() : '-'}
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-center">
+                    <TableCell className="px-4 py-4 text-center">
                       <StatusDisplay status={order.status} />
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
@@ -421,7 +441,7 @@ const PurchaseOrderTable = ({
                   actionText="Xóa bộ lọc"
                   onAction={onClearFilters}
                   showAction={false}
-                  colSpan={5 + Object.values(availableFields).filter(Boolean).length + 2}
+                  colSpan={6 + visibleExtraFieldCount + 2}
                 />
               )}
             </TableBody>

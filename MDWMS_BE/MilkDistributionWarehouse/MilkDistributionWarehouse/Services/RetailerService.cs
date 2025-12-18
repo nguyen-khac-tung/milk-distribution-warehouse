@@ -177,7 +177,7 @@ namespace MilkDistributionWarehouse.Services
 
             var canNotDelete = await _salesOrderRepository.HasActiveSalesOrder(retailerId);
             if (canNotDelete)
-                return ("Không thể xoá nhà bán lẻ vì tồn tại đơn mua hàng đang xử lý.".ToMessageForUser(), new RetailerDetail());
+                return ("Không thể xoá nhà bán lẻ vì tồn tại đơn bán hàng đang xử lý.".ToMessageForUser(), new RetailerDetail());
 
             retailerExist.Status = CommonStatus.Deleted;
             retailerExist.UpdatedAt = DateTimeUtility.Now();
@@ -208,7 +208,7 @@ namespace MilkDistributionWarehouse.Services
         private async Task<string> CheckChangeStatus(int retailerId)
         {
             var checkSalesOrder = await _salesOrderRepository.HasActiveSalesOrder(retailerId);
-            if (checkSalesOrder) return "Tồn tại đơn mua đang xử lý trong hệ thống.";
+            if (checkSalesOrder) return "Tồn tại đơn bán đang xử lý trong hệ thống.";
 
             return "";
         }

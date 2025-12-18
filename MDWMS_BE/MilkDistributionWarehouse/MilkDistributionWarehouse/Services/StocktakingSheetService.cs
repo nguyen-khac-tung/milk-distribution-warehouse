@@ -146,22 +146,30 @@ namespace MilkDistributionWarehouse.Services
             if (string.IsNullOrEmpty(stocktakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.".ToMessageForUser(), default);
 
-            var stocktakingSheetDetail = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            var stocktakingSheetDetail = await _stocktakingSheetRepository.GetStocktakingSheetByStocktakingId(stocktakingSheetId);
             if (stocktakingSheetDetail == null)
                 return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
             var stocktakingSheetMap = _mapper.Map<StocktakingSheetDetail>(stocktakingSheetDetail);
 
-            if (userRole != null &&
-                (userRole.Contains(RoleNames.WarehouseManager) || userRole.Contains(RoleNames.SalesManager)))
+            if (userRole != null)
             {
-                stocktakingSheetMap.IsDiableButtonInProgress = false;
+                stocktakingSheetMap.IsDiableButtonInProgress = userRole.Contains(RoleNames.WarehouseStaff) ?
+                    !(stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
+                && !IsBeforeEditDeadline(stocktakingSheetMap.StartTime)) : true;
+
+                stocktakingSheetMap.CanViewStocktakingArea = userRole.Contains(RoleNames.WarehouseManager) || userRole.Contains(RoleNames.SalesManager)
+                    ? stocktakingSheetDetail.StocktakingAreas.Any(sa => sa.StocktakingLocations.Any())
+                    : stocktakingSheetDetail.StocktakingAreas.Any(sa =>
+                        sa.AssignTo == userId &&
+                        sa.StocktakingLocations.Any()
+                    );  
             }
             else
             {
                 stocktakingSheetMap.IsDiableButtonInProgress =
                     stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
-                    || !IsBeforeEditDeadline(stocktakingSheetMap.StartTime);
+                || !IsBeforeEditDeadline(stocktakingSheetMap.StartTime);
             }
 
             return ("", stocktakingSheetMap);
@@ -177,7 +185,7 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                if (create.StartTime <= DateTimeUtility.Now())
+                if (create.StartTime < DateTimeUtility.Now())
                     throw new Exception("Thời gian bắt đầu phải là thời gian trong tương lai.".ToMessageForUser());
 
                 var isDuplicationStartTime = await _stocktakingSheetRepository.IsDuplicationStartTimeStocktakingSheet(null, create.StartTime);
@@ -227,7 +235,7 @@ namespace MilkDistributionWarehouse.Services
 
                 stocktakingSheetMap.CreatedBy = userId;
 
-                stocktakingSheetMap.Status = create.StocktakingAreaCreates.Any() ?  StocktakingStatus.Assigned : StocktakingStatus.Draft;
+                stocktakingSheetMap.Status = create.StocktakingAreaCreates.Any() ? StocktakingStatus.Assigned : StocktakingStatus.Draft;
 
                 var resultCreate = await _stocktakingSheetRepository.CreateStocktakingSheet(stocktakingSheetMap);
                 if (resultCreate == 0)
@@ -430,7 +438,8 @@ namespace MilkDistributionWarehouse.Services
 
             var stocktakingPallets = await _stocktakingPalletRepository.GetStocktakingPalletsByStocktakingLocationIds(stocktakingLocationIds);
             if (stocktakingPallets == null || !stocktakingPallets.Any())
-                return "Không tìm thấy pallet kiểm kê nào.".ToMessageForUser();
+                return string.Empty;
+            //return "Không tìm thấy pallet kiểm kê nào.".ToMessageForUser();
 
             foreach (var stocktakingPallet in stocktakingPallets)
             {
@@ -465,7 +474,7 @@ namespace MilkDistributionWarehouse.Services
                     if (updatedPallet == null)
                         return $"Cập nhật số lượng pallet {stocktakingPallet.PalletId} thất bại.".ToMessageForUser();
 
-                    if(oldPalletQty != stocktakingPallet.ActualPackageQuantity.Value)
+                    if (oldPalletQty != stocktakingPallet.ActualPackageQuantity.Value)
                     {
                         var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerStocktakingChange(
                         pallet,
@@ -517,9 +526,9 @@ namespace MilkDistributionWarehouse.Services
         {
             var users = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
             var checkUser = users?.FirstOrDefault(u => u.UserId == userId);
-            
+
             if (checkUser != null) return true;
-            
+
             return false;
         }
         private bool IsWarehouseStaff(StocktakingSheet sheet, int? userId)
@@ -604,7 +613,7 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(cancelChildMessage))
                 return cancelChildMessage;
 
-            if(!string.IsNullOrEmpty(note))
+            if (!string.IsNullOrEmpty(note))
             {
                 sheet.Note = note;
             }
@@ -621,14 +630,33 @@ namespace MilkDistributionWarehouse.Services
             if (!IsWarehouseStaff(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
 
-            //if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
-            //{
-            //    var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
-            //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
-            //}
+            if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
+            {
+                var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
+
+                var days = remaining.Days;
+                var hours = remaining.Hours;
+                var minutes = remaining.Minutes;
+
+                var message = "Còn ";
+
+                if (days > 0)
+                    message += $"{days} ngày ";
+
+                if (hours > 0 || days > 0)
+                    message += $"{hours} giờ ";
+
+                message += $"{minutes} phút nữa đến thời gian bắt đầu kiểm kê.";
+
+                return message.ToMessageForUser();
+            }
 
             if (sheet.Status == StocktakingStatus.Completed || sheet.Status == StocktakingStatus.Cancelled)
                 return "Không thể bắt đầu kiểm kê khi phiếu kiểm kê đã Hoàn thành hoặc Đã huỷ.".ToMessageForUser();
+
+            string messageValidation = await ValidationTransactionOrderInProgress();
+            if (!string.IsNullOrEmpty(messageValidation))
+                return messageValidation;
 
             if (inProgressStatus.StocktakingAreaId != Guid.Empty)
             {
@@ -675,6 +703,23 @@ namespace MilkDistributionWarehouse.Services
             var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, targetStatus);
             if (!string.IsNullOrEmpty(updateMessage))
                 return updateMessage;
+
+            return string.Empty;
+        }
+
+        private async Task<string> ValidationTransactionOrderInProgress()
+        {
+            var hasInProgressOrder = await _stocktakingSheetRepository.HasInProgressPurchaseOrder();
+            if (hasInProgressOrder)
+                return "Hiện đang có đơn mua hàng Đang nhập kho. Vui lòng hoàn thành đơn mua hàng đó trước khi bắt đầu kiểm kê.".ToMessageForUser();
+
+            var hasInProgressGIN = await _stocktakingSheetRepository.HasInProgressGIN();
+            if (hasInProgressGIN)
+                return "Hiện đang có phiếu xuất kho Đang xử lý. Vui lòng hoàn thành phiếu xuất kho đó trước khi bắt đầu kiểm kê.".ToMessageForUser();
+
+            var hasInProgressDisposal = await _stocktakingSheetRepository.HasInProgressDisposalNote();
+            if (hasInProgressDisposal)
+                return "Hiện đang có phiếu xuất huỷ Đang xử lý. Vui lòng hoàn thành phiếu xuất huỷ đó trước khi bắt đầu kiểm kê.".ToMessageForUser();
 
             return string.Empty;
         }

@@ -385,16 +385,13 @@ export default function GoodsReceiptDetail() {
       return;
     }
 
-    // Kiểm tra xem tất cả pallet đã có locationCode chưa
-    const allPalletsHaveLocation = pallets.length > 0 && pallets.every(pallet => {
-      const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
-      return locationCode && locationCode !== '';
-    });
+    // Kiểm tra xem tất cả pallet đã được xử lý chưa (status != 2)
+    const allPalletsArranged = pallets.length > 0 && pallets.every(pallet => pallet.status != 2);
 
-    if (!allPalletsHaveLocation) {
-      window.showToast?.("Vui lòng đưa tất cả pallet vào kho trước khi hoàn thành!", "warning");
-      return;
-    }
+    // if (!allPalletsArranged) {
+    //   window.showToast?.("Vui lòng đưa tất cả pallet vào kho trước khi hoàn thành!", "warning");
+    //   return;
+    // }
 
     try {
       await completePurchaseOrder(goodsReceiptNote.purchaseOderId);
@@ -409,6 +406,19 @@ export default function GoodsReceiptDetail() {
       window.showToast?.(msg, "error");
     }
   };
+  // Tự động hoàn thành khi tất cả pallet đã được xử lý (status != 2)
+  useEffect(() => {
+    // Nếu đã hoàn thành hoặc không có pallet thì bỏ qua
+    if (isPurchaseOrderCompleted || !pallets || pallets.length === 0) return;
+    // Quản lý kho không thực hiện hành động này
+    const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+    if (isWarehouseManager) return;
+    // Kiểm tra điều kiện: tất cả pallet có status != 2
+    const allArranged = pallets.every(p => p.status != 2);
+    if (allArranged) {
+      handleCompletePurchaseOrder();
+    }
+  }, [pallets, isPurchaseOrderCompleted, hasPermission]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handler khi thêm location cho pallet thành công
   const handleLocationAdded = useCallback(async () => {
@@ -760,347 +770,347 @@ export default function GoodsReceiptDetail() {
                       <h2 className="text-lg font-semibold mb-3">Đang kiểm nhập</h2>
                       <div className="overflow-x-auto w-full">
                         <Table className="w-full" style={{ tableLayout: 'fixed' }}>
-                        <TableHeader>
-                          <TableRow className="bg-gray-100">
-                            <TableHead className="font-semibold text-gray-700 w-[120px] min-w-0">Mã hàng hóa</TableHead>
-                            <TableHead className="font-semibold text-gray-700 w-[120px] min-w-0">Tên hàng hóa</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Đơn vị tính</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Quy cách đóng gói</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng dự kiến</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng giao đến</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng trả lại</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng thực nhận</TableHead>
-                            <TableHead className="font-semibold text-gray-700">Ghi chú</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Trạng thái</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Hành động</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {needCheckDetails.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có hàng hóa cần kiểm nhập</TableCell>
+                          <TableHeader>
+                            <TableRow className="bg-gray-100">
+                              <TableHead className="font-semibold text-gray-700 w-[90px] min-w-0">Mã hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[120px] min-w-0">Tên hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center">Đơn vị tính</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center">Quy cách đóng gói</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center">SL thùng dự kiến</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng giao đến</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng trả lại</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng thực nhận</TableHead>
+                              <TableHead className="font-semibold text-gray-700">Ghi chú</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center">Trạng thái</TableHead>
+                              <TableHead className="font-semibold text-gray-700 text-center">Hành động</TableHead>
                             </TableRow>
-                          ) : needCheckDetails.map((detail, index) => {
-                            const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
-                            const deliveredPackageQuantity = Number(detail.deliveredPackageQuantity) || 0;
-                            const rejectPackageQuantity = Number(detail.rejectPackageQuantity) || 0;
-                            // Đảm bảo số lượng thực nhận không bao giờ âm, nếu âm thì là 0
-                            const actualPackageQuantity = Math.max(0, deliveredPackageQuantity - rejectPackageQuantity);
+                          </TableHeader>
+                          <TableBody>
+                            {needCheckDetails.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có hàng hóa cần kiểm nhập</TableCell>
+                              </TableRow>
+                            ) : needCheckDetails.map((detail, index) => {
+                              const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
+                              const deliveredPackageQuantity = Number(detail.deliveredPackageQuantity) || 0;
+                              const rejectPackageQuantity = Number(detail.rejectPackageQuantity) || 0;
+                              // Đảm bảo số lượng thực nhận không bao giờ âm, nếu âm thì là 0
+                              const actualPackageQuantity = Math.max(0, deliveredPackageQuantity - rejectPackageQuantity);
 
-                            // Validation logic theo quy tắc
-                            // a = expected (số lượng dự kiến), b = delivered (số lượng giao đến), c = reject (số lượng trả lại)
-                            const validateRejectQuantity = (delivered, reject, expected) => {
-                              // Kiểm tra chỉ cho phép số nguyên
-                              if (delivered !== 0 && delivered % 1 !== 0) {
-                                return `Số lượng giao đến phải là số nguyên`;
-                              }
-                              if (reject !== 0 && reject % 1 !== 0) {
-                                return `Số lượng trả lại phải là số nguyên`;
-                              }
-
-                              if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
-
-                              // Kiểm tra số lượng thực nhận không được âm (reject không được lớn hơn delivered)
-                              if (reject > delivered) {
-                                return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
-                              }
-
-                              if (expected > delivered) {
-                                // TH1: a > b -> 0 <= c <= b
-                                if (reject < 0 || reject > delivered) {
-                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng dự kiến > số lượng giao đến)`;
+                              // Validation logic theo quy tắc
+                              // a = expected (số lượng dự kiến), b = delivered (số lượng giao đến), c = reject (số lượng trả lại)
+                              const validateRejectQuantity = (delivered, reject, expected) => {
+                                // Kiểm tra chỉ cho phép số nguyên
+                                if (delivered !== 0 && delivered % 1 !== 0) {
+                                  return `Số lượng giao đến phải là số nguyên`;
                                 }
-                              } else if (expected < delivered) {
-                                // TH2: a < b -> b - a <= c <= b
-                                const minReject = delivered - expected;
-                                if (reject < minReject) {
-                                  return `Số lượng trả lại  tối thiểu phải là ${minReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                if (reject !== 0 && reject % 1 !== 0) {
+                                  return `Số lượng trả lại phải là số nguyên`;
                                 }
+
+                                if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
+
+                                // Kiểm tra số lượng thực nhận không được âm (reject không được lớn hơn delivered)
                                 if (reject > delivered) {
                                   return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
                                 }
-                              } else {
-                                // TH3: a = b -> 0 <= c <= b
-                                if (reject < 0 || reject > delivered) {
-                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng giao đến = số lượng dự kiến)`;
+
+                                if (expected > delivered) {
+                                  // TH1: a > b -> 0 <= c <= b
+                                  if (reject < 0 || reject > delivered) {
+                                    return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng dự kiến > số lượng giao đến)`;
+                                  }
+                                } else if (expected < delivered) {
+                                  // TH2: a < b -> b - a <= c <= b
+                                  const minReject = delivered - expected;
+                                  if (reject < minReject) {
+                                    return `Số lượng trả lại  tối thiểu phải là ${minReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                  }
+                                  if (reject > delivered) {
+                                    return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
+                                  }
+                                } else {
+                                  // TH3: a = b -> 0 <= c <= b
+                                  if (reject < 0 || reject > delivered) {
+                                    return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng giao đến = số lượng dự kiến)`;
+                                  }
                                 }
-                              }
-                              return null;
-                            };
+                                return null;
+                              };
 
-                            const detailId = detail.goodsReceiptNoteDetailId;
-                            const errorMessage = validateRejectQuantity(deliveredPackageQuantity, rejectPackageQuantity, expectedPackageQuantity);
+                              const detailId = detail.goodsReceiptNoteDetailId;
+                              const errorMessage = validateRejectQuantity(deliveredPackageQuantity, rejectPackageQuantity, expectedPackageQuantity);
 
-                            return (
-                              <>
-                                <TableRow key={index} className="hover:bg-gray-50">
-                                  <TableCell className="font-medium text-gray-900 text-xs">
-                                    <div className="break-words whitespace-normal">{detail.goodsCode}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-700">
-                                    <div className="break-words whitespace-normal">{detail.goodsName}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
-                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
-                                  {/* Số lượng thùng dự kiến */}
-                                  <TableCell className="text-center text-xs">{detail.expectedPackageQuantity ?? 0}</TableCell>
-                                  {/* Số lượng thùng giao đến */}
-                                  <TableCell className="text-center text-xs w-[80px] min-w-0">
-                                    <div className="flex flex-col items-center">
-                                      <input
-                                        type="number"
-                                        step="1"
-                                        className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
-                                          }`}
-                                        value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? '' : detail.deliveredPackageQuantity}
-                                        min={0}
-                                        onChange={e => {
-                                          const value = e.target.value;
-                                          // Làm tròn thành số nguyên nếu nhập số thập phân
-                                          const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
-                                          const updatedDetail = {
-                                            ...detail,
-                                            deliveredPackageQuantity: value === '' ? '' : numValue
-                                          };
+                              return (
+                                <>
+                                  <TableRow key={index} className="hover:bg-gray-50">
+                                    <TableCell className="font-medium text-gray-900 text-xs">
+                                      <div className="break-words whitespace-normal">{detail.goodsCode}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-gray-700">
+                                      <div className="break-words whitespace-normal">{detail.goodsName}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
+                                    <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
+                                    {/* Số lượng thùng dự kiến */}
+                                    <TableCell className="text-center text-xs">{detail.expectedPackageQuantity ?? 0}</TableCell>
+                                    {/* Số lượng thùng giao đến */}
+                                    <TableCell className="text-center text-xs w-[80px] min-w-0">
+                                      <div className="flex flex-col items-center">
+                                        <input
+                                          type="number"
+                                          step="1"
+                                          className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                          value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? '' : detail.deliveredPackageQuantity}
+                                          min={0}
+                                          onChange={e => {
+                                            const value = e.target.value;
+                                            // Làm tròn thành số nguyên nếu nhập số thập phân
+                                            const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
+                                            const updatedDetail = {
+                                              ...detail,
+                                              deliveredPackageQuantity: value === '' ? '' : numValue
+                                            };
 
-                                          setGoodsReceiptNote(prev => ({
-                                            ...prev,
-                                            goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                              d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? updatedDetail : d
-                                            )
-                                          }));
-
-                                          // Validate sau khi update
-                                          const currentReject = Number(detail.rejectPackageQuantity) || 0;
-                                          const currentExpected = expectedPackageQuantity;
-                                          const error = validateRejectQuantity(numValue, currentReject, currentExpected);
-                                          setValidationErrors(prev => ({
-                                            ...prev,
-                                            [detailId]: error
-                                          }));
-                                        }}
-                                        onBlur={e => {
-                                          const value = e.target.value;
-                                          // Làm tròn thành số nguyên
-                                          const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
-
-                                          if (value === '') {
                                             setGoodsReceiptNote(prev => ({
                                               ...prev,
                                               goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: 0 } : d
+                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? updatedDetail : d
                                               )
                                             }));
-                                          } else {
-                                            // Cập nhật giá trị đã làm tròn
-                                            setGoodsReceiptNote(prev => ({
+
+                                            // Validate sau khi update
+                                            const currentReject = Number(detail.rejectPackageQuantity) || 0;
+                                            const currentExpected = expectedPackageQuantity;
+                                            const error = validateRejectQuantity(numValue, currentReject, currentExpected);
+                                            setValidationErrors(prev => ({
                                               ...prev,
-                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: numValue } : d
-                                              )
+                                              [detailId]: error
                                             }));
-                                          }
+                                          }}
+                                          onBlur={e => {
+                                            const value = e.target.value;
+                                            // Làm tròn thành số nguyên
+                                            const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
 
-                                          // Validate reject quantity sau khi update delivered
-                                          const currentReject = Number(detail.rejectPackageQuantity) || 0;
-                                          const currentExpected = expectedPackageQuantity;
-                                          const error = validateRejectQuantity(numValue, currentReject, currentExpected);
-                                          setValidationErrors(prev => ({
-                                            ...prev,
-                                            [detailId]: error
-                                          }));
-                                        }}
-                                      />
-                                    </div>
-                                  </TableCell>
-                                  {/* Số lượng thùng trả lại */}
-                                  <TableCell className="text-center text-xs w-[80px] min-w-0">
-                                    <div className="flex flex-col items-center">
-                                      <input
-                                        type="number"
-                                        step="1"
-                                        className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
-                                          }`}
-                                        value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? '' : detail.rejectPackageQuantity}
-                                        min={0}
-                                        onChange={e => {
-                                          const value = e.target.value;
-                                          // Làm tròn thành số nguyên nếu nhập số thập phân
-                                          const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
-
-                                          setGoodsReceiptNote(prev => ({
-                                            ...prev,
-                                            goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                              d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: value === '' ? '' : numValue } : d
-                                            )
-                                          }));
-
-                                          // Validate
-                                          const currentDelivered = Number(detail.deliveredPackageQuantity) || 0;
-                                          const currentExpected = expectedPackageQuantity;
-                                          const error = validateRejectQuantity(currentDelivered, numValue, currentExpected);
-                                          setValidationErrors(prev => ({
-                                            ...prev,
-                                            [detailId]: error
-                                          }));
-                                        }}
-                                        onBlur={e => {
-                                          const value = e.target.value;
-                                          // Làm tròn thành số nguyên
-                                          const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
-
-                                          if (value === '') {
-                                            setGoodsReceiptNote(prev => ({
-                                              ...prev,
-                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: 0 } : d
-                                              )
-                                            }));
-                                          } else {
-                                            // Cập nhật giá trị đã làm tròn
-                                            setGoodsReceiptNote(prev => ({
-                                              ...prev,
-                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: numValue } : d
-                                              )
-                                            }));
-                                          }
-
-                                          // Validate
-                                          const currentDelivered = Number(detail.deliveredPackageQuantity) || 0;
-                                          const currentExpected = expectedPackageQuantity;
-                                          const error = validateRejectQuantity(currentDelivered, numValue, currentExpected);
-                                          setValidationErrors(prev => ({
-                                            ...prev,
-                                            [detailId]: error
-                                          }));
-                                        }}
-                                      />
-                                    </div>
-                                  </TableCell>
-                                  {/* Số lượng thùng thực nhận */}
-                                  <TableCell className="text-center text-xs w-[80px] min-w-0">
-                                    <input
-                                      type="number"
-                                      className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500 bg-gray-50 text-blue-700 font-semibold"
-                                      value={actualPackageQuantity}
-                                      readOnly
-                                      disabled
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-gray-600">
-                                    <input type="text" className="w-full max-w-[200px] h-8 px-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-blue-500"
-                                      value={detail.note || ''}
-                                      onChange={e => {
-                                        const value = e.target.value;
-                                        setGoodsReceiptNote(prev => ({
-                                          ...prev,
-                                          goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                            d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, note: value } : d
-                                          )
-                                        }));
-                                      }}
-                                    />
-                                  </TableCell>
-                                  {/* Cột trạng thái */}
-                                  <TableCell className="text-center min-w-[110px]">
-                                    {(() => {
-                                      const meta = getReceiptItemStatusMeta(detail.status); return (
-                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words whitespace-normal ${meta.color}`}>{meta.label}</span>
-                                      );
-                                    })()}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
-                                      <Button
-                                        size="sm"
-                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] w-[38px] p-0 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                                        disabled={!!validationErrors[detailId]}
-                                        onClick={async () => {
-                                          // Validate trước khi submit
-                                          const error = validateRejectQuantity(
-                                            Number(detail.deliveredPackageQuantity) || 0,
-                                            Number(detail.rejectPackageQuantity) || 0,
-                                            expectedPackageQuantity
-                                          );
-
-                                          if (error) {
-                                            window.showToast?.(error, "error");
-                                            return;
-                                          }
-
-                                          try {
-                                            await verifyRecord({
-                                              goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
-                                              deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
-                                              rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
-                                              note: detail.note || ''
-                                            });
-
-                                            // Xóa validation error cho item này
-                                            setValidationErrors(prev => {
-                                              const newErrors = { ...prev };
-                                              delete newErrors[detailId];
-                                              return newErrors;
-                                            });
-
-                                            // Chỉ update item vừa verify trong state, không fetch lại toàn bộ để giữ dữ liệu đã nhập ở các item khác
-                                            setGoodsReceiptNote(prev => {
-                                              if (!prev) return prev;
-                                              return {
+                                            if (value === '') {
+                                              setGoodsReceiptNote(prev => ({
                                                 ...prev,
                                                 goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                                  d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId
-                                                    ? {
-                                                      ...d,
-                                                      status: RECEIPT_ITEM_STATUS.Inspected, // Update status thành Inspected
-                                                      deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
-                                                      rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
-                                                      actualPackageQuantity: Math.max(0, (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0)),
-                                                      note: detail.note || ''
-                                                    }
-                                                    : d // Giữ nguyên các item khác với dữ liệu đã nhập
+                                                  d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: 0 } : d
                                                 )
-                                              };
-                                            });
+                                              }));
+                                            } else {
+                                              // Cập nhật giá trị đã làm tròn
+                                              setGoodsReceiptNote(prev => ({
+                                                ...prev,
+                                                goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                  d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: numValue } : d
+                                                )
+                                              }));
+                                            }
 
-                                            window.showToast?.("Kiểm nhập thành công!", "success");
-                                          } catch (error) {
-                                            console.error("Error verifying record:", error);
-                                            const msg = extractErrorMessage(error, "Kiểm nhập thất bại, vui lòng thử lại!");
-                                            window.showToast?.(msg, "error");
-                                          }
+                                            // Validate reject quantity sau khi update delivered
+                                            const currentReject = Number(detail.rejectPackageQuantity) || 0;
+                                            const currentExpected = expectedPackageQuantity;
+                                            const error = validateRejectQuantity(numValue, currentReject, currentExpected);
+                                            setValidationErrors(prev => ({
+                                              ...prev,
+                                              [detailId]: error
+                                            }));
+                                          }}
+                                        />
+                                      </div>
+                                    </TableCell>
+                                    {/* Số lượng thùng trả lại */}
+                                    <TableCell className="text-center text-xs w-[80px] min-w-0">
+                                      <div className="flex flex-col items-center">
+                                        <input
+                                          type="number"
+                                          step="1"
+                                          className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                          value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? '' : detail.rejectPackageQuantity}
+                                          min={0}
+                                          onChange={e => {
+                                            const value = e.target.value;
+                                            // Làm tròn thành số nguyên nếu nhập số thập phân
+                                            const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
+
+                                            setGoodsReceiptNote(prev => ({
+                                              ...prev,
+                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: value === '' ? '' : numValue } : d
+                                              )
+                                            }));
+
+                                            // Validate
+                                            const currentDelivered = Number(detail.deliveredPackageQuantity) || 0;
+                                            const currentExpected = expectedPackageQuantity;
+                                            const error = validateRejectQuantity(currentDelivered, numValue, currentExpected);
+                                            setValidationErrors(prev => ({
+                                              ...prev,
+                                              [detailId]: error
+                                            }));
+                                          }}
+                                          onBlur={e => {
+                                            const value = e.target.value;
+                                            // Làm tròn thành số nguyên
+                                            const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
+
+                                            if (value === '') {
+                                              setGoodsReceiptNote(prev => ({
+                                                ...prev,
+                                                goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                  d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: 0 } : d
+                                                )
+                                              }));
+                                            } else {
+                                              // Cập nhật giá trị đã làm tròn
+                                              setGoodsReceiptNote(prev => ({
+                                                ...prev,
+                                                goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                  d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: numValue } : d
+                                                )
+                                              }));
+                                            }
+
+                                            // Validate
+                                            const currentDelivered = Number(detail.deliveredPackageQuantity) || 0;
+                                            const currentExpected = expectedPackageQuantity;
+                                            const error = validateRejectQuantity(currentDelivered, numValue, currentExpected);
+                                            setValidationErrors(prev => ({
+                                              ...prev,
+                                              [detailId]: error
+                                            }));
+                                          }}
+                                        />
+                                      </div>
+                                    </TableCell>
+                                    {/* Số lượng thùng thực nhận */}
+                                    <TableCell className="text-center text-xs w-[80px] min-w-0">
+                                      <input
+                                        type="number"
+                                        className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500 bg-gray-50 text-blue-700 font-semibold"
+                                        value={actualPackageQuantity}
+                                        readOnly
+                                        disabled
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-gray-600">
+                                      <input type="text" className="w-full max-w-[200px] h-8 px-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-blue-500"
+                                        value={detail.note || ''}
+                                        onChange={e => {
+                                          const value = e.target.value;
+                                          setGoodsReceiptNote(prev => ({
+                                            ...prev,
+                                            goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                              d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, note: value } : d
+                                            )
+                                          }));
                                         }}
-                                        title="Kiểm nhập"
-                                      >
-                                        <CheckCircle className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                                {validationErrors[detailId] && (
-                                  <TableRow key={`${index}-validation-error`}>
-                                    <TableCell colSpan={11} className="py-2">
-                                      <div className="text-red-600 text-xs italic">
-                                        {validationErrors[detailId]}
-                                      </div>
+                                      />
+                                    </TableCell>
+                                    {/* Cột trạng thái */}
+                                    <TableCell className="text-center min-w-[110px]">
+                                      {(() => {
+                                        const meta = getReceiptItemStatusMeta(detail.status); return (
+                                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words whitespace-normal ${meta.color}`}>{meta.label}</span>
+                                        );
+                                      })()}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
+                                        <Button
+                                          size="sm"
+                                          className="bg-green-600 text-white hover:bg-green-700 h-[38px] w-[38px] p-0 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                          disabled={!!validationErrors[detailId]}
+                                          onClick={async () => {
+                                            // Validate trước khi submit
+                                            const error = validateRejectQuantity(
+                                              Number(detail.deliveredPackageQuantity) || 0,
+                                              Number(detail.rejectPackageQuantity) || 0,
+                                              expectedPackageQuantity
+                                            );
+
+                                            if (error) {
+                                              window.showToast?.(error, "error");
+                                              return;
+                                            }
+
+                                            try {
+                                              await verifyRecord({
+                                                goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
+                                                deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                                rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                                note: detail.note || ''
+                                              });
+
+                                              // Xóa validation error cho item này
+                                              setValidationErrors(prev => {
+                                                const newErrors = { ...prev };
+                                                delete newErrors[detailId];
+                                                return newErrors;
+                                              });
+
+                                              // Chỉ update item vừa verify trong state, không fetch lại toàn bộ để giữ dữ liệu đã nhập ở các item khác
+                                              setGoodsReceiptNote(prev => {
+                                                if (!prev) return prev;
+                                                return {
+                                                  ...prev,
+                                                  goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                    d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId
+                                                      ? {
+                                                        ...d,
+                                                        status: RECEIPT_ITEM_STATUS.Inspected, // Update status thành Inspected
+                                                        deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                                        rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                                        actualPackageQuantity: Math.max(0, (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0)),
+                                                        note: detail.note || ''
+                                                      }
+                                                      : d // Giữ nguyên các item khác với dữ liệu đã nhập
+                                                  )
+                                                };
+                                              });
+
+                                              window.showToast?.("Kiểm nhập thành công!", "success");
+                                            } catch (error) {
+                                              console.error("Error verifying record:", error);
+                                              const msg = extractErrorMessage(error, "Kiểm nhập thất bại, vui lòng thử lại!");
+                                              window.showToast?.(msg, "error");
+                                            }
+                                          }}
+                                          title="Kiểm nhập"
+                                        >
+                                          <CheckCircle className="h-4 w-4" />
+                                        </Button>
+                                      )}
                                     </TableCell>
                                   </TableRow>
-                                )}
-                                {detail.rejectionReason && (
-                                  <TableRow key={`${index}-rej`}>
-                                    <TableCell colSpan={11} className="py-2">
-                                      <div className="text-red-600 text-xs italic">
-                                        Lý do từ chối: {detail.rejectionReason}
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+                                  {validationErrors[detailId] && (
+                                    <TableRow key={`${index}-validation-error`}>
+                                      <TableCell colSpan={11} className="py-2">
+                                        <div className="text-red-600 text-xs italic">
+                                          {validationErrors[detailId]}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                  {detail.rejectionReason && (
+                                    <TableRow key={`${index}-rej`}>
+                                      <TableCell colSpan={11} className="py-2">
+                                        <div className="text-red-600 text-xs italic">
+                                          Lý do từ chối: {detail.rejectionReason}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
                       </div>
                     </>
                   )}
@@ -1139,158 +1149,158 @@ export default function GoodsReceiptDetail() {
                         <Table className="w-full">
                           <TableHeader>
                             <TableRow className="bg-green-100">
-                            {/* Checkbox cho quản lý kho */}
-                            {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                              <TableHead className="font-semibold text-green-900 text-center w-12">
-                                {(() => {
-                                  // Quản lý kho: chỉ hiển thị items có status PendingApproval
-                                  const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
-                                  const filteredCheckedDetails = isWarehouseManager
-                                    ? checkedDetails.filter(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval)
-                                    : checkedDetails;
-
-                                  const rejectableDetails = filteredCheckedDetails.filter(d =>
-                                    d.status === RECEIPT_ITEM_STATUS.PendingApproval
-                                  );
-                                  const allSelected = rejectableDetails.length > 0 &&
-                                    selectedDetailsForReject.length === rejectableDetails.length &&
-                                    rejectableDetails.every(d => isDetailSelectedForReject(d.goodsReceiptNoteDetailId));
-
-                                  return (
-                                    <input
-                                      type="checkbox"
-                                      checked={allSelected}
-                                      onChange={(e) => handleSelectAllForReject(e.target.checked)}
-                                      disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Draft}
-                                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                                    />
-                                  );
-                                })()}
-                              </TableHead>
-                            )}
-                            <TableHead className="font-semibold text-green-900 w-[120px] min-w-0">Mã hàng hóa</TableHead>
-                            <TableHead className="font-semibold text-green-900 w-[120px] min-w-0">Tên hàng hóa</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng dự kiến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng giao đến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng trả lại</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng thực nhận</TableHead>
-                            <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
-                            {/* Cột Hành động: chỉ hiển thị cho nhân viên kho (không phải quản lý kho) */}
-                            {(() => {
-                              const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
-                              const hasInspectedItems = checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected);
-                              return !isWarehouseManager && hasInspectedItems && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                                <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
-                              );
-                            })()}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {(() => {
-                            // Quản lý kho: chỉ hiển thị items có status PendingApproval
-                            // Nhân viên kho: hiển thị tất cả (Inspected, PendingApproval, Completed)
-                            const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
-                            const filteredCheckedDetails = isWarehouseManager
-                              ? checkedDetails.filter(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval)
-                              : checkedDetails;
-
-                            return filteredCheckedDetails.length === 0 ? (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={(() => {
-                                    const hasCheckbox = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed;
-                                    const hasActionColumn = !isWarehouseManager && checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed;
-
-                                    let colspan = 10; // 10 cột cơ bản
-                                    if (hasCheckbox) colspan += 1; // +1 cho checkbox
-                                    if (hasActionColumn) colspan += 1; // +1 cho cột Hành động
-
-                                    return colspan;
-                                  })()}
-                                  className="text-center text-green-500 py-8"
-                                >
-                                  Chưa có hàng hóa đã kiểm nhập
-                                </TableCell>
-                              </TableRow>
-                            ) : filteredCheckedDetails.map((detail, idx) => {
-                              const canReject = detail.status === RECEIPT_ITEM_STATUS.PendingApproval;
-
-                              return (
-                                <TableRow key={idx} className="hover:bg-green-50">
-                                  {/* Checkbox cho quản lý kho - chỉ hiển thị cho các item có thể từ chối */}
-                                  {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                                    <TableCell className="text-center">
-                                      {canReject ? (
-                                        <input
-                                          type="checkbox"
-                                          checked={isDetailSelectedForReject(detail.goodsReceiptNoteDetailId)}
-                                          onChange={(e) => handleSelectDetailForReject(detail, e.target.checked)}
-                                          disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Draft}
-                                          className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                                        />
-                                      ) : null}
-                                    </TableCell>
-                                  )}
-                                  <TableCell className="font-medium text-green-800 text-xs">
-                                    <div className="break-words whitespace-normal">{detail.goodsCode}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-green-700">
-                                    <div className="break-words whitespace-normal">{detail.goodsName}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-green-700 text-center">{detail.unitMeasureName}</TableCell>
-                                  <TableCell className="text-xs text-green-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
-                                  <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
-                                  <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
-                                  <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
-                                  <TableCell className="text-center text-xs">{Math.max(0, detail.actualPackageQuantity || 0)}</TableCell>
-                                  <TableCell className="text-green-700">
-                                    <div className="break-words whitespace-normal max-w-[200px]">{detail.note || ''}</div>
-                                  </TableCell>
-                                  {/* Cột trạng thái */}
-                                  <TableCell className="text-center min-w-[110px]">
-                                    {(() => {
-                                      const meta = getReceiptItemStatusMeta(detail.status); return (
-                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words whitespace-normal ${meta.color}`}>{meta.label}</span>
-                                      );
-                                    })()}
-                                  </TableCell>
-                                  {/* Cột Hành động: chỉ hiển thị cho nhân viên kho (không phải quản lý kho) */}
+                              {/* Checkbox cho quản lý kho */}
+                              {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                                <TableHead className="font-semibold text-green-900 text-center w-12">
                                   {(() => {
-                                    const hasInspectedItems = checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected);
-                                    return !isWarehouseManager && hasInspectedItems && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                                      <TableCell className="text-center">
-                                        <div className="inline-flex items-center gap-2">
-                                          {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                                            <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[38px] w-[38px] p-0 flex items-center justify-center rounded" onClick={async () => {
-                                              try {
-                                                await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
-                                                fetchGoodsReceiptNoteDetail();
-                                              } catch (error) {
-                                                console.error("Error canceling goods receipt note detail:", error);
-                                                const msg = extractErrorMessage(error, "Kiểm nhập lại thất bại, vui lòng thử lại!");
-                                                window.showToast?.(msg, "error");
-                                              }
-                                            }} title="Kiểm nhập lại">
-                                              <RotateCcw className="h-4 w-4" />
-                                            </Button>
-                                          )}
-                                          {/* Chỉ hiển thị nút từ chối ở row nếu không phải quản lý kho (nhân viên kho) */}
-                                          {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
-                                            <Button onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)} className="h-[38px] px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all">Từ chối</Button>
-                                          )}
-                                        </div>
-                                      </TableCell>
+                                    // Quản lý kho: chỉ hiển thị items có status PendingApproval
+                                    const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+                                    const filteredCheckedDetails = isWarehouseManager
+                                      ? checkedDetails.filter(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval)
+                                      : checkedDetails;
+
+                                    const rejectableDetails = filteredCheckedDetails.filter(d =>
+                                      d.status === RECEIPT_ITEM_STATUS.PendingApproval
+                                    );
+                                    const allSelected = rejectableDetails.length > 0 &&
+                                      selectedDetailsForReject.length === rejectableDetails.length &&
+                                      rejectableDetails.every(d => isDetailSelectedForReject(d.goodsReceiptNoteDetailId));
+
+                                    return (
+                                      <input
+                                        type="checkbox"
+                                        checked={allSelected}
+                                        onChange={(e) => handleSelectAllForReject(e.target.checked)}
+                                        disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Draft}
+                                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                      />
                                     );
                                   })()}
+                                </TableHead>
+                              )}
+                              <TableHead className="font-semibold text-green-900 w-[90px] min-w-0">Mã hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-green-900 w-[120px] min-w-0">Tên hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[80px]">Đơn vị tính</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[120px]">Quy cách đóng gói</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng dự kiến</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng giao đến</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng trả lại</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center w-[120px]">SL thùng thực nhận</TableHead>
+                              <TableHead className="font-semibold text-green-900 w-[90px]">Ghi chú</TableHead>
+                              <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
+                              {/* Cột Hành động: chỉ hiển thị cho nhân viên kho (không phải quản lý kho) */}
+                              {(() => {
+                                const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+                                const hasInspectedItems = checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected);
+                                return !isWarehouseManager && hasInspectedItems && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                                  <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
+                                );
+                              })()}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(() => {
+                              // Quản lý kho: chỉ hiển thị items có status PendingApproval
+                              // Nhân viên kho: hiển thị tất cả (Inspected, PendingApproval, Completed)
+                              const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+                              const filteredCheckedDetails = isWarehouseManager
+                                ? checkedDetails.filter(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval)
+                                : checkedDetails;
+
+                              return filteredCheckedDetails.length === 0 ? (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={(() => {
+                                      const hasCheckbox = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed;
+                                      const hasActionColumn = !isWarehouseManager && checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed;
+
+                                      let colspan = 10; // 10 cột cơ bản
+                                      if (hasCheckbox) colspan += 1; // +1 cho checkbox
+                                      if (hasActionColumn) colspan += 1; // +1 cho cột Hành động
+
+                                      return colspan;
+                                    })()}
+                                    className="text-center text-green-500 py-8"
+                                  >
+                                    Chưa có hàng hóa đã kiểm nhập
+                                  </TableCell>
                                 </TableRow>
-                              );
-                            })
-                          })()}
-                        </TableBody>
-                      </Table>
+                              ) : filteredCheckedDetails.map((detail, idx) => {
+                                const canReject = detail.status === RECEIPT_ITEM_STATUS.PendingApproval;
+
+                                return (
+                                  <TableRow key={idx} className="hover:bg-green-50">
+                                    {/* Checkbox cho quản lý kho - chỉ hiển thị cho các item có thể từ chối */}
+                                    {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                                      <TableCell className="text-center">
+                                        {canReject ? (
+                                          <input
+                                            type="checkbox"
+                                            checked={isDetailSelectedForReject(detail.goodsReceiptNoteDetailId)}
+                                            onChange={(e) => handleSelectDetailForReject(detail, e.target.checked)}
+                                            disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Draft}
+                                            className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                          />
+                                        ) : null}
+                                      </TableCell>
+                                    )}
+                                    <TableCell className="font-medium text-green-800 text-xs">
+                                      <div className="break-words whitespace-normal">{detail.goodsCode}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-green-700">
+                                      <div className="break-words whitespace-normal">{detail.goodsName}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-green-700 text-center">{detail.unitMeasureName}</TableCell>
+                                    <TableCell className="text-xs text-green-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
+                                    <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
+                                    <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
+                                    <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
+                                    <TableCell className="text-center text-xs">{Math.max(0, detail.actualPackageQuantity || 0)}</TableCell>
+                                    <TableCell className="text-green-700">
+                                      <div className="break-words whitespace-normal max-w-[200px]">{detail.note || ''}</div>
+                                    </TableCell>
+                                    {/* Cột trạng thái */}
+                                    <TableCell className="text-center min-w-[110px]">
+                                      {(() => {
+                                        const meta = getReceiptItemStatusMeta(detail.status); return (
+                                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words whitespace-normal ${meta.color}`}>{meta.label}</span>
+                                        );
+                                      })()}
+                                    </TableCell>
+                                    {/* Cột Hành động: chỉ hiển thị cho nhân viên kho (không phải quản lý kho) */}
+                                    {(() => {
+                                      const hasInspectedItems = checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected);
+                                      return !isWarehouseManager && hasInspectedItems && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                                        <TableCell className="text-center">
+                                          <div className="inline-flex items-center gap-2">
+                                            {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
+                                              <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[38px] w-[38px] p-0 flex items-center justify-center rounded" onClick={async () => {
+                                                try {
+                                                  await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
+                                                  fetchGoodsReceiptNoteDetail();
+                                                } catch (error) {
+                                                  console.error("Error canceling goods receipt note detail:", error);
+                                                  const msg = extractErrorMessage(error, "Kiểm nhập lại thất bại, vui lòng thử lại!");
+                                                  window.showToast?.(msg, "error");
+                                                }
+                                              }} title="Kiểm nhập lại">
+                                                <RotateCcw className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                            {/* Chỉ hiển thị nút từ chối ở row nếu không phải quản lý kho (nhân viên kho) */}
+                                            {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
+                                              <Button onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)} className="h-[38px] px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all">Từ chối</Button>
+                                            )}
+                                          </div>
+                                        </TableCell>
+                                      );
+                                    })()}
+                                  </TableRow>
+                                );
+                              })
+                            })()}
+                          </TableBody>
+                        </Table>
                       </div>
                     </>
                   ) : null}
@@ -1360,8 +1370,8 @@ export default function GoodsReceiptDetail() {
                 <div className="flex gap-3">
                   {/* Ẩn nút "Thêm Lô Mới" cho nhân viên kho khi đã tạo pallet */}
                   {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && palletCreated) && (
-                    <Button 
-                      className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+                    <Button
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => setShowCreateBatchModal(true)}
                       disabled={goodsReceiptNote?.purchaseOrderStatus === 9}
                     >
@@ -1491,140 +1501,140 @@ export default function GoodsReceiptDetail() {
                           <Table className="w-full">
                             <TableHeader>
                               <TableRow className="bg-purple-100">
-                              {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
-                                <TableHead className="font-semibold text-purple-900 text-center w-12">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectAll}
-                                    onChange={(e) => handleSelectAll(e.target.checked)}
-                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                                  />
-                                </TableHead>
-                              )}
-                              <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
-                              <TableHead className="font-semibold text-purple-900 min-w-[140px]">Tên hàng hóa</TableHead>
-                              <TableHead className="font-semibold text-purple-900 min-w-[120px]">Mã hàng hóa</TableHead>
-                              <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
-                              <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
-                              <TableHead className="font-semibold text-purple-900">Vị trí</TableHead>
-                              <TableHead className="font-semibold text-purple-900 text-center">Trạng thái</TableHead>
-                              <TableHead className="font-semibold text-purple-900 text-center">Hoạt động</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {pallets.map((pallet, index) => {
-                              // Lấy locationCode từ pallet
-                              const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
-                              // Chỉ hiển thị nút Add khi chưa có locationCode (chưa được gán vị trí)
-                              const isEmptyLocation = !locationCode || locationCode === '';
+                                {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                                  <TableHead className="font-semibold text-purple-900 text-center w-12">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectAll}
+                                      onChange={(e) => handleSelectAll(e.target.checked)}
+                                      className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                    />
+                                  </TableHead>
+                                )}
+                                <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
+                                <TableHead className="font-semibold text-purple-900 min-w-[140px]">Tên hàng hóa</TableHead>
+                                <TableHead className="font-semibold text-purple-900 min-w-[80px]">Mã hàng hóa</TableHead>
+                                <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
+                                <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
+                                <TableHead className="font-semibold text-purple-900">Vị trí</TableHead>
+                                <TableHead className="font-semibold text-purple-900 text-center">Trạng thái</TableHead>
+                                <TableHead className="font-semibold text-purple-900 text-center">Hoạt động</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {pallets.map((pallet, index) => {
+                                // Lấy locationCode từ pallet
+                                const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
+                                // Chỉ hiển thị nút Add khi chưa có locationCode (chưa được gán vị trí)
+                                const isEmptyLocation = !locationCode || locationCode === '';
 
-                              // Hàm hiển thị trạng thái
-                              const getStatusDisplay = (status) => {
-                                if (status === 1 || status === '1') {
-                                  return {
-                                    label: 'Đã được sắp xếp',
-                                    className: 'bg-green-100 text-green-800'
-                                  };
-                                } else if (status === 2 || status === '2') {
-                                  return {
-                                    label: 'Chưa được sắp xếp',
-                                    className: 'bg-yellow-100 text-yellow-800'
-                                  };
-                                } else {
-                                  return {
-                                    label: 'Đang xử lý',
-                                    className: 'bg-blue-100 text-blue-800'
-                                  };
-                                }
-                              };
+                                // Hàm hiển thị trạng thái
+                                const getStatusDisplay = (status) => {
+                                  if (status === 1 || status === '1') {
+                                    return {
+                                      label: 'Đã được sắp xếp',
+                                      className: 'bg-green-100 text-green-800'
+                                    };
+                                  } else if (status === 2 || status === '2') {
+                                    return {
+                                      label: 'Chưa được sắp xếp',
+                                      className: 'bg-yellow-100 text-yellow-800'
+                                    };
+                                  } else {
+                                    return {
+                                      label: 'Đang xử lý',
+                                      className: 'bg-blue-100 text-blue-800'
+                                    };
+                                  }
+                                };
 
-                              const statusDisplay = getStatusDisplay(pallet.status);
+                                const statusDisplay = getStatusDisplay(pallet.status);
 
-                              return (
-                                <TableRow key={pallet.palletId || pallet.id || index} className="hover:bg-purple-50">
-                                  {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
-                                    <TableCell className="px-6 py-4 text-center">
-                                      <input
-                                        type="checkbox"
-                                        checked={isPalletSelected(pallet)}
-                                        onChange={(e) => handleSelectPallet(pallet, e.target.checked)}
-                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                                      />
+                                return (
+                                  <TableRow key={pallet.palletId || pallet.id || index} className="hover:bg-purple-50">
+                                    {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                                      <TableCell className="px-6 py-4 text-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={isPalletSelected(pallet)}
+                                          onChange={(e) => handleSelectPallet(pallet, e.target.checked)}
+                                          className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                        />
+                                      </TableCell>
+                                    )}
+                                    <TableCell className="font-medium text-gray-900 text-xs">
+                                      <div className="break-words whitespace-normal">{pallet.palletCode || pallet.code || pallet.palletId || 'N/A'}</div>
                                     </TableCell>
-                                  )}
-                                  <TableCell className="font-medium text-gray-900 text-xs">
-                                    <div className="break-words whitespace-normal">{pallet.palletCode || pallet.code || pallet.palletId || 'N/A'}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-700">
-                                    <div className="break-words whitespace-normal">{pallet.goodName || 'N/A'}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-700">
-                                    <div className="break-words whitespace-normal">{pallet.goodCode || pallet.goodsCode || 'N/A'}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-700 text-center">
-                                    <div className="break-words whitespace-normal">{pallet.batchCode || 'N/A'}</div>
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-700 text-center">
-                                    {pallet.packageQuantity || pallet.numPackages || 0}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-700">
-                                    <div className="break-words whitespace-normal">{locationCode || 'Chưa đưa vào vị trí'}</div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.className}`}>
-                                      {statusDisplay.label}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <div className="flex items-center justify-center gap-2">
-                                      {isEmptyLocation && !(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
-                                        <>
+                                    <TableCell className="text-xs text-gray-700">
+                                      <div className="break-words whitespace-normal">{pallet.goodName || 'N/A'}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-gray-700">
+                                      <div className="break-words whitespace-normal">{pallet.goodCode || pallet.goodsCode || 'N/A'}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-gray-700 text-center">
+                                      <div className="break-words whitespace-normal">{pallet.batchCode || 'N/A'}</div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-gray-700 text-center">
+                                      {pallet.packageQuantity || pallet.numPackages || 0}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-gray-700">
+                                      <div className="break-words whitespace-normal">{locationCode || 'Chưa đưa vào vị trí'}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.className}`}>
+                                        {statusDisplay.label}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="flex items-center justify-center gap-2">
+                                        {isEmptyLocation && !(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0 hover:bg-yellow-50"
+                                              onClick={() => handleOpenLocationSuggestion(pallet)}
+                                              title="Gợi ý vị trí"
+                                            >
+                                              <Lightbulb className="w-4 h-4 text-yellow-600" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0 hover:bg-red-50"
+                                              onClick={() => {
+                                                setSelectedPalletForLocation(pallet);
+                                                setShowAddLocationModal(true);
+                                              }}
+                                              title="Thêm vị trí"
+                                            >
+                                              <Plus className="w-4 h-4 text-red-600" />
+                                            </Button>
+                                          </>
+                                        )}
+                                        {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-8 w-8 p-0 hover:bg-yellow-50"
-                                            onClick={() => handleOpenLocationSuggestion(pallet)}
-                                            title="Gợi ý vị trí"
+                                            className="h-8 w-8 p-0 hover:bg-blue-50"
+                                            onClick={() => handlePrintPallet(pallet)}
+                                            title="In mã pallet"
                                           >
-                                            <Lightbulb className="w-4 h-4 text-yellow-600" />
+                                            <Printer className="w-4 h-4 text-blue-600" />
                                           </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 hover:bg-red-50"
-                                            onClick={() => {
-                                              setSelectedPalletForLocation(pallet);
-                                              setShowAddLocationModal(true);
-                                            }}
-                                            title="Thêm vị trí"
-                                          >
-                                            <Plus className="w-4 h-4 text-red-600" />
-                                          </Button>
-                                        </>
-                                      )}
-                                      {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 hover:bg-blue-50"
-                                          onClick={() => handlePrintPallet(pallet)}
-                                          title="In mã pallet"
-                                        >
-                                          <Printer className="w-4 h-4 text-blue-600" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex justify-end pt-4 border-t border-gray-200">
+                    {/* <div className="flex justify-end pt-4 border-t border-gray-200">
                       {(() => {
                         // Ẩn nút "Hoàn Thành" cho quản lý kho, chỉ hiển thị cho nhân viên kho
                         const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
@@ -1652,7 +1662,7 @@ export default function GoodsReceiptDetail() {
                           </Button>
                         );
                       })()}
-                    </div>
+                    </div> */}
                   </div>
                 )}
               </CardContent>
