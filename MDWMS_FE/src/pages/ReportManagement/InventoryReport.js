@@ -69,6 +69,30 @@ const StatusPieChart = ({ data }) => {
   const createDonutArc = (startAngle, angle, color, index) => {
     if (angle === 0) return null
 
+    // Handle full circle (360 degrees) - draw complete donut
+    if (angle >= 359.9) {
+      return (
+        <g key={index}>
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r={outerRadius}
+            fill={color}
+            stroke="white"
+            strokeWidth="3"
+            className="transition-all duration-500 ease-out hover:opacity-80"
+          />
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r={innerRadius}
+            fill="white"
+            className="transition-all duration-500 ease-out hover:opacity-80"
+          />
+        </g>
+      )
+    }
+
     const endAngle = startAngle + angle
     const startRad = (startAngle * Math.PI) / 180
     const endRad = (endAngle * Math.PI) / 180
@@ -1167,13 +1191,13 @@ export default function InventoryReport({ onClose }) {
                 {/* Total Products Summary - At bottom of chart card */}
                 <div className="mt-6 pt-6 border-t border-slate-200">
                   <div className="text-center">
-                    <p className="text-sm text-slate-600 mb-2">
+                    <div className="text-center text-gray-500 font-semibold py-2">
                       Tổng số hàng hóa tồn kho hiện tại
-                    </p>
-                    <p className="text-3xl font-bold text-orange-500">
+                    </div>
+                    <div className="text-3xl font-semibold text-orange-500">
                       {chartData.uniqueProductsCount.toLocaleString("vi-VN")}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">hàng hóa</p>
+                    </div>
+                    <div className="text-center text-gray-500 font-semibold py-2">hàng hóa</div>
                   </div>
                 </div>
               </div>

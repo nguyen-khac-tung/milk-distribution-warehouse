@@ -140,6 +140,33 @@ const StatusPieChart = ({ data }) => {
   segments.forEach((segment, index) => {
     if (segment.value === 0) return
     const angle = (segment.value / total) * 360
+    
+    // Handle full circle (360 degrees) - draw complete donut
+    if (angle >= 359.9) {
+      paths.push(
+        <g key={segment.label}>
+          <circle
+            cx={center}
+            cy={center}
+            r={outerRadius}
+            fill={segment.color}
+            stroke="white"
+            strokeWidth="2"
+            className="transition-all duration-300 ease-out hover:opacity-80"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={innerRadius}
+            fill="white"
+            className="transition-all duration-300 ease-out hover:opacity-80"
+          />
+        </g>
+      )
+      cumulativeAngle += angle
+      return
+    }
+
     const startAngle = cumulativeAngle
     const endAngle = cumulativeAngle + angle
     cumulativeAngle = endAngle
