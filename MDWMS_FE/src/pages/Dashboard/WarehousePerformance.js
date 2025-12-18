@@ -201,9 +201,11 @@ const StatusPieChart = ({ data }) => {
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {paths}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-3xl font-semibold text-slate-700">{total}</p>
-          <p className="text-xs text-slate-500">lô hàng</p>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-3xl font-semibold text-slate-700">{total}</div>
+            <div className="text-xs text-slate-500 mt-1">lô hàng</div>
+          </div>
         </div>
       </div>
       <div className="mt-5 grid grid-cols-1 gap-2 w-full">
