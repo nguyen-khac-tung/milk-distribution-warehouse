@@ -140,6 +140,33 @@ const StatusPieChart = ({ data }) => {
   segments.forEach((segment, index) => {
     if (segment.value === 0) return
     const angle = (segment.value / total) * 360
+    
+    // Handle full circle (360 degrees) - draw complete donut
+    if (angle >= 359.9) {
+      paths.push(
+        <g key={segment.label}>
+          <circle
+            cx={center}
+            cy={center}
+            r={outerRadius}
+            fill={segment.color}
+            stroke="white"
+            strokeWidth="2"
+            className="transition-all duration-300 ease-out hover:opacity-80"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={innerRadius}
+            fill="white"
+            className="transition-all duration-300 ease-out hover:opacity-80"
+          />
+        </g>
+      )
+      cumulativeAngle += angle
+      return
+    }
+
     const startAngle = cumulativeAngle
     const endAngle = cumulativeAngle + angle
     cumulativeAngle = endAngle
@@ -174,9 +201,11 @@ const StatusPieChart = ({ data }) => {
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {paths}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-3xl font-semibold text-slate-700">{total}</p>
-          <p className="text-xs text-slate-500">lô hàng</p>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-3xl font-semibold text-slate-700">{total}</div>
+            <div className="text-xs text-slate-500 mt-1">lô hàng</div>
+          </div>
         </div>
       </div>
       <div className="mt-5 grid grid-cols-1 gap-2 w-full">
