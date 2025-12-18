@@ -629,7 +629,7 @@ const SalesOrderList = () => {
                     <SaleOrderFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo nhà bán lẻ, người duyệt, người tạo..."
+                        searchPlaceholder="Tìm kiếm theo mã đơn hàng, nhà bán lẻ, người duyệt..."
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}

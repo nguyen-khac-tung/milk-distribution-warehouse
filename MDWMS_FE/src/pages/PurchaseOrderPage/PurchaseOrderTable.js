@@ -223,7 +223,7 @@ const PurchaseOrderTable = ({
                   </TableHead>
                 )}
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[120px]" onClick={() => handleSort("createdAt")}>
+                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("createdAt")}>
                     <span>Thời gian tạo</span>
                     {sortField === "createdAt" ? (
                       sortAscending ? (
@@ -236,7 +236,7 @@ const PurchaseOrderTable = ({
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center min-w-[90px]">
+                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center min-w-[100px]">
                   <span>Trạng thái</span>
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
@@ -254,17 +254,19 @@ const PurchaseOrderTable = ({
                     <TableCell className="px-2 py-4 text-slate-600 font-medium text-center">
                       {(pagination.current - 1) * pagination.pageSize + index + 1}
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-slate-700 font-bold">
+                    <TableCell className="py-4 text-slate-700 font-bold">
                       {order.purchaseOderId || '-'}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-slate-700 text-left">
-                      <span className="font-bold">
+                      <span>
                         {order.supplierName || order.supplierId || '-'}
                       </span>
                     </TableCell>
                     {availableFields.hasCreatedByName && !isWarehouseManager && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.createdByName || order.createdBy || '-'}
+                        <span className="text-yellow-600 font-medium">
+                         {order.createdByName || order.createdBy || '-'}
+                        </span>
                       </TableCell>
                     )}
                     {availableFields.hasApprovalByName && !isWarehouseManager && (

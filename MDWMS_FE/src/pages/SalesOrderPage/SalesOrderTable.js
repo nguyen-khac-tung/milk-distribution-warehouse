@@ -94,7 +94,7 @@ const SalesOrderTable = ({
                                     STT
                                 </TableHead>
                                 {/* mã bán hàng */}
-                                <TableHead className="font-semibold text-slate-900 px-2 py-2 w-10">
+                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                     Mã bán hàng
                                 </TableHead>
 
@@ -226,7 +226,7 @@ const SalesOrderTable = ({
                                     onClick={() => handleSort("createdAt")}
                                 >
                                     <div className="flex items-center justify-center space-x-2 cursor-pointer">
-                                        <span>Ngày tạo</span>
+                                        <span>Thời gian tạo</span>
                                         {sortField === "createdAt" ? (
                                             sortAscending ? (
                                                 <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -271,7 +271,7 @@ const SalesOrderTable = ({
 
                                         {/* Nhà bán lẻ */}
                                         <TableCell className="text-left text-slate-700 px-6 py-4 max-w-[180px] break-words whitespace-normal">
-                                            <span className="font-bold">
+                                            <span>
                                                 {order.retailerName || order.retailerId || '-'}
                                             </span>
                                         </TableCell>
@@ -279,7 +279,9 @@ const SalesOrderTable = ({
                                         {/* Người tạo */}
                                         {availableFields.hasCreatedByName && (
                                             <TableCell className="text-center px-6 py-4">
-                                                {order.createdByName || "-"}
+                                                <span className="text-yellow-600 font-medium">
+                                                  {order.createdByName || "-"}
+                                                </span>
                                             </TableCell>
                                         )}
 
