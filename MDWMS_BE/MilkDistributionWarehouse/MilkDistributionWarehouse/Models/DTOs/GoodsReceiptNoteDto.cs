@@ -13,7 +13,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string PurchaseOderId { get; set; }
-        public int PurchaseOrderStatus { get; set; }    
+        public int PurchaseOrderStatus { get; set; }
+        public DateTime? EstimatedTimeArrival { get; set; }
         public List<GoodsReceiptNoteDetailListDto> GoodsReceiptNoteDetails { get; set; }
     }
     public class GoodsReceiptNoteCreate
