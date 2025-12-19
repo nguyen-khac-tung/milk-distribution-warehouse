@@ -778,12 +778,22 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<PageResult<ReportDto.InventoryLedgerReportDto>> GetInventoryLedgerReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
         {
-            // normalize dates
             if (!fromDate.HasValue && !toDate.HasValue)
             {
                 var now = DateTimeUtility.Now();
                 fromDate = new DateTime(now.Year, now.Month, 1);
                 toDate = now;
+            }
+
+            if (fromDate.HasValue && toDate.HasValue && fromDate.Value > toDate.Value)
+            {
+                return new PageResult<ReportDto.InventoryLedgerReportDto>
+                {
+                    Items = new List<ReportDto.InventoryLedgerReportDto>(),
+                    TotalCount = 0,
+                    PageNumber = Math.Max(1, request.PageNumber),
+                    PageSize = Math.Max(1, request.PageSize)
+                };
             }
 
             var from = fromDate.Value.Date;
