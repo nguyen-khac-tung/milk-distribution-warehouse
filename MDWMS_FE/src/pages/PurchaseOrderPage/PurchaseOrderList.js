@@ -170,20 +170,20 @@ export default function PurchaseOrderList() {
 
   // Helper function để tạo request params
   const createRequestParams = (overrides = {}) => {
-    // Format createdAt từ dateRangeFilter
-    let createdAtFilter = "";
+    // Format estimatedTimeArrival từ dateRangeFilter
+    let estimatedTimeArrivalFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
+      estimatedTimeArrivalFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
+      estimatedTimeArrivalFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
+      estimatedTimeArrivalFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
 
     // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
     const normalizedSearch = normalize(searchQuery);
 
-    return {
+    const params = {
       pageNumber: pagination.current,
       pageSize: pagination.pageSize,
       search: normalizedSearch,
@@ -195,9 +195,17 @@ export default function PurchaseOrderList() {
       createdBy: creatorFilter,
       arrivalConfirmedBy: confirmerFilter,
       assignTo: assigneeFilter,
-      createdAt: createdAtFilter,
       ...overrides // Override với giá trị mới
     };
+
+    // Thêm estimatedTimeArrival nếu có giá trị hoặc được override (kể cả rỗng để clear filter)
+    if (estimatedTimeArrivalFilter || overrides.estimatedTimeArrival !== undefined) {
+      params.estimatedTimeArrival = overrides.estimatedTimeArrival !== undefined 
+        ? overrides.estimatedTimeArrival 
+        : estimatedTimeArrivalFilter;
+    }
+
+    return params;
   };
 
   const fetchData = async () => {
@@ -319,33 +327,10 @@ export default function PurchaseOrderList() {
     // Update pagination state first
     setPagination(prev => ({ ...prev, current: newPage }));
 
-    // Format createdAt từ dateRangeFilter
-    let createdAtFilter = "";
-    if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
-    } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
-    } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
-    }
-
-    // Call fetchData with the new page number directly
-    // Normalize search query trước khi gọi API
-    const normalizedSearch = normalize(searchQuery);
-    const requestParams = {
-      pageNumber: newPage, // Use the new page directly
-      pageSize: pagination.pageSize,
-      search: normalizedSearch,
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter,
-      supplierId: supplierFilter,
-      approvalBy: approverFilter,
-      createdBy: creatorFilter,
-      arrivalConfirmedBy: confirmerFilter,
-      assignTo: assigneeFilter,
-      createdAt: createdAtFilter
-    };
+    // Sử dụng createRequestParams để đảm bảo tính nhất quán
+    const requestParams = createRequestParams({
+      pageNumber: newPage
+    });
 
     fetchDataWithParams(requestParams);
   };
@@ -354,33 +339,11 @@ export default function PurchaseOrderList() {
     // Update pagination state first
     setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
 
-    // Format createdAt từ dateRangeFilter
-    let createdAtFilter = "";
-    if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
-    } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
-    } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
-    }
-
-    // Call fetchData with the new page size directly
-    // Normalize search query trước khi gọi API
-    const normalizedSearch = normalize(searchQuery);
-    const requestParams = {
-      pageNumber: 1, // Reset to page 1 when changing page size
-      pageSize: newPageSize,
-      search: normalizedSearch,
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter,
-      supplierId: supplierFilter,
-      approvalBy: approverFilter,
-      createdBy: creatorFilter,
-      arrivalConfirmedBy: confirmerFilter,
-      assignTo: assigneeFilter,
-      createdAt: createdAtFilter
-    };
+    // Sử dụng createRequestParams để đảm bảo tính nhất quán
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      pageSize: newPageSize
+    });
 
     fetchDataWithParams(requestParams);
   };
@@ -452,7 +415,7 @@ export default function PurchaseOrderList() {
       createdBy: "",
       arrivalConfirmedBy: "",
       assignTo: "",
-      createdAt: ""
+      estimatedTimeArrival: ""
     };
 
     // Gọi API trực tiếp với params rỗng
@@ -589,19 +552,19 @@ export default function PurchaseOrderList() {
   };
 
   const applyDateRangeFilter = () => {
-    // Format createdAt từ dateRangeFilter hiện tại
-    let createdAtFilter = "";
+    // Format estimatedTimeArrival từ dateRangeFilter hiện tại
+    let estimatedTimeArrivalFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
+      estimatedTimeArrivalFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
+      estimatedTimeArrivalFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
+      estimatedTimeArrivalFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
 
     const requestParams = createRequestParams({
       pageNumber: 1,
-      createdAt: createdAtFilter
+      estimatedTimeArrival: estimatedTimeArrivalFilter
     });
     fetchDataWithParams(requestParams);
   };
@@ -612,7 +575,7 @@ export default function PurchaseOrderList() {
 
     const requestParams = createRequestParams({
       pageNumber: 1,
-      createdAt: ""
+      estimatedTimeArrival: ""
     });
     fetchDataWithParams(requestParams);
   };

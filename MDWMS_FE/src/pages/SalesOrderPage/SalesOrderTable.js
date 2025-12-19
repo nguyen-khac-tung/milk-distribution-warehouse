@@ -280,7 +280,7 @@ const SalesOrderTable = ({
                                         {availableFields.hasCreatedByName && (
                                             <TableCell className="text-center px-6 py-4">
                                                 <span className="text-yellow-600 font-medium">
-                                                  {order.createdByName || "-"}
+                                                    {order.createdByName || "-"}
                                                 </span>
                                             </TableCell>
                                         )}
@@ -320,13 +320,13 @@ const SalesOrderTable = ({
 
                                         {/* Thời gian xuất kho */}
                                         <TableCell className="text-center px-6 py-4">
-                                            {order.estimatedTimeDeparture ? (
-                                                <>
-                                                    {new Date(order.estimatedTimeDeparture).toLocaleDateString("vi-VN")}
-                                                </>
-                                            ) : (
-                                                "-"
-                                            )}
+                                            {order.estimatedTimeDeparture
+                                                ? new Date(order.estimatedTimeDeparture).toLocaleString("vi-VN", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                })
+                                                : "-"}
                                         </TableCell>
 
                                         {/* Ngày tạo */}

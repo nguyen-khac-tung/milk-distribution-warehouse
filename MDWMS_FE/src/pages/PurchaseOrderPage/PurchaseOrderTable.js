@@ -138,108 +138,122 @@ const PurchaseOrderTable = ({
           <Table className="w-full">
             <TableHeader>
               <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                <TableHead className="font-semibold text-slate-900 px-1 py-1 text-center w-6">
+                <TableHead className="font-semibold text-slate-900 px-1 py-1 text-center min-h-[40px]">
                   STT
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-4 py-2 min-w-[100px]">
                   Mã mua hàng
                 </TableHead>
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                <TableHead className="font-semibold text-slate-900 py-3 text-left">
                   <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("supplierId")}>
                     <span>Nhà cung cấp</span>
                     {sortField === "supplierId" ? (
                       sortAscending ? (
-                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                        <ArrowUp className="h-3 w-3 text-orange-500" />
                       ) : (
-                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                        <ArrowDown className="h-3 w-3 text-orange-500" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                      <ArrowUpDown className="h-3 w-3 text-slate-400" />
                     )}
                   </div>
                 </TableHead>
                 {availableFields.hasCreatedByName && !isWarehouseManager && (
-                  <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                  <TableHead className="font-semibold text-slate-900 py-3 text-center">
                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
                       <span>Người tạo</span>
                       {sortField === "createdBy" ? (
                         sortAscending ? (
-                          <ArrowUp className="h-4 w-4 text-orange-500" />
+                          <ArrowUp className="h-3 w-3 text-orange-500" />
                         ) : (
-                          <ArrowDown className="h-4 w-4 text-orange-500" />
+                          <ArrowDown className="h-3 w-3 text-orange-500" />
                         )
                       ) : (
-                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
                       )}
                     </div>
                   </TableHead>
                 )}
                 {availableFields.hasApprovalByName && !isWarehouseManager && (
-                  <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                  <TableHead className="font-semibold text-slate-900 py-3 text-center">
                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("approvalBy")}>
                       <span>Người duyệt</span>
                       {sortField === "approvalBy" ? (
                         sortAscending ? (
-                          <ArrowUp className="h-4 w-4 text-orange-500" />
+                          <ArrowUp className="h-3 w-3 text-orange-500" />
                         ) : (
-                          <ArrowDown className="h-4 w-4 text-orange-500" />
+                          <ArrowDown className="h-3 w-3 text-orange-500" />
                         )
                       ) : (
-                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                        <ArrowUpDown className="h-3 w-4 text-slate-400" />
                       )}
                     </div>
                   </TableHead>
                 )}
                 {availableFields.hasArrivalConfirmedByName && !isSalesManager && (
-                  <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("arrivalConfirmedBy")}>
+                  <TableHead className="font-semibold text-slate-900 py-3 text-center">
+                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("arrivalConfirmedBy")}>
                       <span>Người xác nhận đến</span>
                       {sortField === "arrivalConfirmedBy" ? (
                         sortAscending ? (
-                          <ArrowUp className="h-4 w-4 text-orange-500" />
+                          <ArrowUp className="h-3 w-3 text-orange-500" />
                         ) : (
-                          <ArrowDown className="h-4 w-4 text-orange-500" />
+                          <ArrowDown className="h-3 w-3 text-orange-500" />
                         )
                       ) : (
-                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
                       )}
                     </div>
                   </TableHead>
                 )}
                 {availableFields.hasAssignToName && (
-                  <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                  <TableHead className="font-semibold text-slate-900 py-3 text-center">
                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("assignTo")}>
                       <span>Giao cho</span>
                       {sortField === "assignTo" ? (
                         sortAscending ? (
-                          <ArrowUp className="h-4 w-4 text-orange-500" />
+                          <ArrowUp className="h-3 w-3 text-orange-500" />
                         ) : (
-                          <ArrowDown className="h-4 w-4 text-orange-500" />
+                          <ArrowDown className="h-3 w-3 text-orange-500" />
                         )
                       ) : (
-                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
                       )}
                     </div>
                   </TableHead>
                 )}
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                <TableHead className="font-semibold text-slate-900 py-3 text-center">
+                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("estimatedTimeArrival")}>
+                    <span>Thời gian nhập kho</span>
+                    {sortField === "estimatedTimeArrival" ? (
+                      sortAscending ? (
+                        <ArrowUp className="h-3 w-3 text-orange-500" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3 text-orange-500" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="font-semibold text-slate-900 py-3 text-center">
                   <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("createdAt")}>
                     <span>Thời gian tạo</span>
                     {sortField === "createdAt" ? (
                       sortAscending ? (
-                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                        <ArrowUp className="h-3 w-3 text-orange-500" />
                       ) : (
-                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                        <ArrowDown className="h-3 w-3 text-orange-500" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                      <ArrowUpDown className="h-3 w-3 text-slate-400" />
                     )}
                   </div>
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center min-w-[100px]">
                   <span>Trạng thái</span>
                 </TableHead>
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                <TableHead className="font-semibold text-slate-900 py-3 text-center w-32">
                   Thao tác
                 </TableHead>
               </TableRow>
@@ -249,28 +263,28 @@ const PurchaseOrderTable = ({
                 (paginatedPurchaseOrders || []).map((order, index) => (
                   <TableRow
                     key={index}
-                    className="hover:bg-slate-50 border-b border-slate-200 min-h-[60px]"
+                    className="hover:bg-slate-50 border-b border-slate-200 min-h-[40px]"
                   >
-                    <TableCell className="px-2 py-4 text-slate-600 font-medium text-center">
+                    <TableCell className="py-4 text-slate-600 font-medium text-center">
                       {(pagination.current - 1) * pagination.pageSize + index + 1}
                     </TableCell>
                     <TableCell className="py-4 text-slate-700 font-bold">
                       {order.purchaseOderId || '-'}
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-slate-700 text-left">
+                    <TableCell className="py-4 text-slate-700 text-left">
                       <span>
                         {order.supplierName || order.supplierId || '-'}
                       </span>
                     </TableCell>
                     {availableFields.hasCreatedByName && !isWarehouseManager && (
-                      <TableCell className="px-6 py-4 text-slate-700 text-center">
+                      <TableCell className="py-4 text-slate-700 text-center">
                         <span className="text-yellow-600 font-medium">
-                         {order.createdByName || order.createdBy || '-'}
+                          {order.createdByName || order.createdBy || '-'}
                         </span>
                       </TableCell>
                     )}
                     {availableFields.hasApprovalByName && !isWarehouseManager && (
-                      <TableCell className="px-6 py-4 text-slate-700 text-center">
+                      <TableCell className="py-4 text-slate-700 text-center">
                         {order.approvalByName || order.approvalBy ? (
                           <span className="text-green-600 font-medium">
                             {order.approvalByName || order.approvalBy}
@@ -281,7 +295,7 @@ const PurchaseOrderTable = ({
                       </TableCell>
                     )}
                     {availableFields.hasArrivalConfirmedByName && !isSalesManager && (
-                      <TableCell className="px-6 py-4 text-slate-700 text-center">
+                      <TableCell className="py-4 text-slate-700 text-center">
                         {order.arrivalConfirmedByName || order.arrivalConfirmedBy ? (
                           <span className="text-blue-600 font-medium">
                             {order.arrivalConfirmedByName || order.arrivalConfirmedBy}
@@ -292,7 +306,7 @@ const PurchaseOrderTable = ({
                       </TableCell>
                     )}
                     {availableFields.hasAssignToName && (
-                      <TableCell className="px-6 py-4 text-slate-700 text-center">
+                      <TableCell className="py-4 text-slate-700 text-center">
                         {order.assignToName || order.assignToByName || order.assignTo ? (
                           <span className="text-purple-600 font-medium">
                             {order.assignToName || order.assignToByName || order.assignTo}
@@ -302,7 +316,14 @@ const PurchaseOrderTable = ({
                         )}
                       </TableCell>
                     )}
-                    <TableCell className="px-6 py-4 text-slate-700 text-center">
+                    <TableCell className="py-4 text-slate-700 text-center">
+                      {order.estimatedTimeArrival ? (() => {
+                        const date = new Date(order.estimatedTimeArrival);
+                        const dateStr = date.toLocaleDateString('vi-VN');
+                        return `${dateStr}`;
+                      })() : '-'}
+                    </TableCell>
+                    <TableCell className="py-4 text-slate-700 text-center">
                       {order.createdAt ? (() => {
                         const date = new Date(order.createdAt);
                         const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -310,10 +331,10 @@ const PurchaseOrderTable = ({
                         return `${time} ${dateStr}`;
                       })() : '-'}
                     </TableCell>
-                    <TableCell className="px-4 py-4 text-center">
+                    <TableCell className="py-4 text-center">
                       <StatusDisplay status={order.status} />
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-center">
+                    <TableCell className="py-4 text-center">
                       <div className="flex items-center justify-center space-x-1">
                         {/* View button - always visible for Sales Representative */}
                         {canPerformPurchaseOrderAction('view', order, hasPermission) && (

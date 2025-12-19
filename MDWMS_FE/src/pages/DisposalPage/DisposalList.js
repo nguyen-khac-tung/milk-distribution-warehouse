@@ -489,7 +489,6 @@ const DisposalList = () => {
             return {
                 ...defaultConfig,
                 showApprover: false,
-                showSeller: false,
             };
         }
 

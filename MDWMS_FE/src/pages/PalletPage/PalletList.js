@@ -397,8 +397,8 @@ export default function PalletList() {
     const filteredStatusOptions = useMemo(() => {
         const statusOptions = [
             { value: "", label: "Tất cả trạng thái" },
-            { value: "1", label: "Đã đưa vào vị trí" },
-            { value: "2", label: "Chưa đưa vào vị trí" }
+            { value: "1", label: "Đã xếp" },
+            { value: "2", label: "Chưa xếp" }
         ]
         if (!statusSearchQuery) return statusOptions
         const normalizedQuery = normalize(statusSearchQuery)
@@ -494,8 +494,8 @@ export default function PalletList() {
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
                     totalLabel="Tổng pallet"
-                    activeLabel="Đã đưa vào vị trí"
-                    inactiveLabel="Chưa đưa vào vị trí"
+                    activeLabel="Đã xếp"
+                    inactiveLabel="Chưa xếp"
                 />
 
                 {/* Search and Table Combined */}
@@ -510,8 +510,8 @@ export default function PalletList() {
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
                             { value: "", label: "Tất cả trạng thái" },
-                            { value: "1", label: "Đã đưa vào vị trí" },
-                            { value: "2", label: "Chưa đưa vào vị trí" }
+                            { value: "1", label: "Đã xếp" },
+                            { value: "2", label: "Chưa xếp" }
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
@@ -701,7 +701,7 @@ export default function PalletList() {
                                                     {pallet?.unitPerPackage || 0}
                                                 </TableCell>
 
-                                                <TableCell className="px-6 py-4 text-center">
+                                                <TableCell className="px-6 py-4 text-center ">
                                                     <div className="flex justify-center">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 break-words whitespace-normal ${pallet?.status === 1
                                                             ? 'bg-green-100 text-green-800'
@@ -709,7 +709,7 @@ export default function PalletList() {
                                                             }`}>
                                                             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${pallet?.status === 1 ? 'bg-green-500' : 'bg-red-500'
                                                                 }`}></span>
-                                                            <span>{pallet?.status === 1 ? 'Đã đưa vào vị trí' : 'Chưa đưa vào vị trí'}</span>
+                                                            <span>{pallet?.status === 1 ? 'Đã xếp' : 'Chưa xếp'}</span>
                                                         </span>
                                                     </div>
                                                 </TableCell>

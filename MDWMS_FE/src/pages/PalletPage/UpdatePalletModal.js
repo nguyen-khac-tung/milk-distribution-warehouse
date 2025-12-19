@@ -184,6 +184,7 @@ const UpdatePalletModal = ({
     if (!formData.locationCode || formData.locationCode === '') {
       newErrors.locationCode = 'Mã vị trí là bắt buộc';
     }
+    // Không cần check locationId ở đây vì đã được validate trong handleSubmit
 
     if (!formData.packageQuantity || formData.packageQuantity === '') {
       newErrors.packageQuantity = 'Số lượng thùng là bắt buộc';
@@ -206,7 +207,9 @@ const UpdatePalletModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate location code before submitting
+    // Validate location code before submitting - luôn validate nếu có locationCode
+    // Đảm bảo validate cả khi nhập tay và chưa blur ra khỏi input
+    let validatedLocationId = formData.locationId; // Giữ locationId hiện tại nếu đã có
     if (formData.locationCode && formData.locationCode.trim() !== '') {
       try {
         setLocationValidating(true);
@@ -214,35 +217,47 @@ const UpdatePalletModal = ({
         const palletIdRaw = pallet?.palletId || pallet?.id;
         const palletId = palletIdRaw != null ? String(palletIdRaw) : "";
         const result = await validateLocationCode(formData.locationCode, palletId);
-        setLocationValidationResult(result);
-
+        
         // Lấy message từ result và xử lý qua extractErrorMessage
         const message = result.message || "";
-        const processedMessage = message ? extractErrorMessage({ response: { data: { message } } }, message) : "Mã vị trí không tồn tại";
+        const processedMessage = message 
+          ? extractErrorMessage({ response: { data: { message } } }, message) 
+          : (result.success ? "Mã vị trí hợp lệ" : "Mã vị trí không tồn tại");
+
+        // Lưu kết quả validation với message đã được xử lý
+        setLocationValidationResult({
+          ...result,
+          message: processedMessage
+        });
 
         if (!result.success) {
           setErrors(prev => ({
             ...prev,
             locationCode: processedMessage
           }));
-          // Không hiển thị toast, chỉ hiển thị message dưới input
           setLocationValidating(false);
           return;
         }
 
-        // Update locationId from validation result
+        // Lưu locationId từ kết quả validate để dùng ngay (không cần đợi setState)
+        validatedLocationId = result.data?.locationId || '';
+
+        // Update locationId trong formData để đồng bộ state
         setFormData(prev => ({
           ...prev,
-          locationId: result.data?.locationId || ''
+          locationId: validatedLocationId
         }));
       } catch (error) {
         console.error("Error validating location:", error);
         const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi kiểm tra mã vị trí");
+        setLocationValidationResult({
+          success: false,
+          message: errorMessage
+        });
         setErrors(prev => ({
           ...prev,
           locationCode: errorMessage
         }));
-        // Không hiển thị toast, chỉ hiển thị message dưới input
         setLocationValidating(false);
         return;
       } finally {
@@ -250,16 +265,26 @@ const UpdatePalletModal = ({
       }
     }
 
+    // Validate form sau khi đã validate location code thành công
     if (!validateForm()) {
+      return;
+    }
+
+    // Kiểm tra lại locationId sau khi validate (đảm bảo có locationId nếu có locationCode)
+    if (formData.locationCode && formData.locationCode.trim() !== '' && (!validatedLocationId || validatedLocationId === '')) {
+      setErrors(prev => ({
+        ...prev,
+        locationCode: 'Vui lòng kiểm tra lại mã vị trí'
+      }));
       return;
     }
 
     try {
       setLoading(true);
-      // Prepare data for API - send IDs, not codes
+      // Sử dụng validatedLocationId thay vì formData.locationId để đảm bảo dùng giá trị mới nhất
       const apiData = {
         batchId: formData.batchId,
-        locationId: formData.locationId,
+        locationId: validatedLocationId || formData.locationId,
         packageQuantity: formData.packageQuantity,
         goodsPackingId: formData.goodsPackingId,
         goodsReceiptNoteId: formData.goodsReceiptNoteId
@@ -433,7 +458,7 @@ const UpdatePalletModal = ({
                   <div className="relative">
                     <Input
                       id="locationCode"
-                      placeholder="Nhập mã vị trí..."
+                      placeholder="Quét mã vị trí..."
                       value={formData.locationCode}
                       onChange={(e) => handleInputChange('locationCode', e.target.value)}
                       onBlur={(e) => {

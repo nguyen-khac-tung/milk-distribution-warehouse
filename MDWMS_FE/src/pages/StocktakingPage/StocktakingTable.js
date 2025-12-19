@@ -113,7 +113,7 @@ const StocktakingTable = ({
                                     </div>
                                 </TableHead>
                                 {availableFields.hasCreateByName && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                    <TableHead className="font-semibold text-slate-900 py-3 text-center">
                                         <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
                                             <span>Người tạo</span>
                                             {sortField === "createdBy" ? (
@@ -146,7 +146,7 @@ const StocktakingTable = ({
                                 )}
                                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdAt")}>
-                                        <span>Ngày tạo</span>
+                                        <span>Thời gian tạo</span>
                                         {sortField === "createdAt" ? (
                                             sortAscending ? (
                                                 <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -184,8 +184,10 @@ const StocktakingTable = ({
                                             </span>
                                         </TableCell>
                                         {availableFields.hasCreateByName && (
-                                            <TableCell className="px-6 py-4 text-slate-700 text-center">
-                                                {stocktaking.createByName || stocktaking.createdBy || '-'}
+                                            <TableCell className="py-4 text-slate-700 text-center">
+                                                <span className="text-yellow-600 font-medium">
+                                                    {stocktaking.createByName || stocktaking.createdBy || '-'}
+                                                </span>
                                             </TableCell>
                                         )}
                                         {availableFields.hasStartTime && (
@@ -314,16 +316,16 @@ const StocktakingTable = ({
                                                     (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') ||
                                                     (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2')
                                                 ) && (
-                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
-                                                        <button
-                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title="Chỉnh sửa"
-                                                            onClick={() => handleEditClick(stocktaking)}
-                                                        >
-                                                            <Edit className="h-4 w-4 text-orange-500" />
-                                                        </button>
-                                                    </PermissionWrapper>
-                                                )}
+                                                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title="Chỉnh sửa"
+                                                                onClick={() => handleEditClick(stocktaking)}
+                                                            >
+                                                                <Edit className="h-4 w-4 text-orange-500" />
+                                                            </button>
+                                                        </PermissionWrapper>
+                                                    )}
                                                 {isWarehouseManager && (
                                                     (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2') ||
                                                     (stocktaking.status === STOCKTAKING_STATUS.InProgress || stocktaking.status === 4 || stocktaking.status === '4') ||

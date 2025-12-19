@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck, MapPin, X } from 'lucide-react';
+import { Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck, X, Search } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getDetailDisposalNote, submitDisposalNote, approveDisposalNote, rePickDisposalNoteDetail, rePickDisposalNoteDetailList, exportDisposalNoteWord } from '../../services/DisposalService';
 import { getPickAllocationDetail, confirmPickAllocation } from '../../services/PickAllocationService';
@@ -667,81 +667,6 @@ const DisposalNoteDetail = () => {
                         </div>
                         {/* Các nút hành động ở header nhóm */}
                         <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
-                            {/* Search bar tìm kiếm vị trí hoặc pallet - chỉ hiển thị cho Warehouse Staff, nhóm "Đang lấy hàng" */}
-                            {isWarehouseStaff &&
-                                statusCode === DISPOSAL_ITEM_STATUS.Picking && (
-                                    <div className="flex flex-col bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                                        <div className="flex items-center gap-2">
-                                            <Barcode className="w-4 h-4 text-gray-600" />
-                                            <div className="relative flex-1">
-                                                <input
-                                                    type="text"
-                                                    value={searchCode}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value;
-                                                        setSearchCode(value);
-                                                        setSearchError('');
-
-                                                        // Clear timeout cũ
-                                                        if (searchTimeoutRef.current) {
-                                                            clearTimeout(searchTimeoutRef.current);
-                                                        }
-
-                                                        const trimmedValue = value.trim();
-                                                        if (!trimmedValue) {
-                                                            setHighlightedPickAllocationId(null);
-                                                            setHighlightedDetailId(null);
-                                                            setSearching(false);
-                                                            return;
-                                                        }
-
-                                                        // Debounce 500ms cho tìm kiếm
-                                                        setSearching(true);
-                                                        searchTimeoutRef.current = setTimeout(async () => {
-                                                            await handleSearch(trimmedValue);
-                                                        }, 500);
-                                                    }}
-                                                    onKeyDown={async (e) => {
-                                                        if (e.key === 'Enter' && searchCode.trim()) {
-                                                            // Clear timeout nếu đang debounce
-                                                            if (searchTimeoutRef.current) {
-                                                                clearTimeout(searchTimeoutRef.current);
-                                                            }
-                                                            await handleSearch(searchCode.trim());
-                                                        }
-                                                    }}
-                                                    placeholder="Quét mã vị trí hoặc pallet nhanh"
-                                                    className="w-64 px-3 py-1.5 pr-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                />
-                                                {searchCode && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setSearchCode('');
-                                                            setSearchError('');
-                                                            setHighlightedPickAllocationId(null);
-                                                            setHighlightedDetailId(null);
-                                                            setSearching(false);
-                                                            if (searchTimeoutRef.current) {
-                                                                clearTimeout(searchTimeoutRef.current);
-                                                            }
-                                                        }}
-                                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors"
-                                                        title="Xóa"
-                                                    >
-                                                        <X className="w-3.5 h-3.5 text-gray-500" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {searching && (
-                                                <RefreshCw className="w-4 h-4 text-gray-600 animate-spin" />
-                                            )}
-                                        </div>
-                                        {searchError && (
-                                            <span className="text-xs text-red-600 mt-1">{searchError}</span>
-                                        )}
-                                    </div>
-                                )}
                             {/* Nút "Lấy lại" nhiều - chỉ hiển thị cho quản lý kho, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
                             {isWarehouseManager &&
                                 statusCode === DISPOSAL_ITEM_STATUS.PendingApproval &&
@@ -1118,6 +1043,102 @@ const DisposalNoteDetail = () => {
                             </div>
                         </div>
                     </Card>
+
+                    {/* Search vị trí / pallet cho toàn bộ phiếu (mọi trạng thái) - chỉ cho Warehouse Staff */}
+                    {isWarehouseStaff && disposalNote.disposalNoteDetails && disposalNote.disposalNoteDetails.length > 0 && (
+                        <Card className="bg-white border border-gray-200 shadow-sm">
+                            <div className="p-6 flex flex-col gap-3">
+                                {/* Header + Search cùng 1 hàng */}
+                                <div className="flex items-center justify-between gap-4 px-3">
+                                    {/* Bên trái: Icon + tiêu đề */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-gray-100 rounded-lg flex items-center justify-center">
+                                            <Search className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <h2 className="text-lg font-semibold text-gray-900 leading-tight mb-0">
+                                            Tìm kiếm theo vị trí hoặc pallet
+                                        </h2>
+                                    </div>
+
+                                    {/* Bên phải: ô search */}
+                                    <div className="flex items-center gap-2 flex-1 max-w-md">
+                                        <div className="relative flex-1">
+                                            <Barcode className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+
+                                            <input
+                                                type="text"
+                                                value={searchCode}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setSearchCode(value);
+                                                    setSearchError('');
+
+                                                    if (searchTimeoutRef.current) {
+                                                        clearTimeout(searchTimeoutRef.current);
+                                                    }
+
+                                                    const trimmedValue = value.trim();
+                                                    if (!trimmedValue) {
+                                                        setHighlightedPickAllocationId(null);
+                                                        setHighlightedDetailId(null);
+                                                        setSearching(false);
+                                                        return;
+                                                    }
+
+                                                    setSearching(true);
+                                                    searchTimeoutRef.current = setTimeout(async () => {
+                                                        await handleSearch(trimmedValue);
+                                                    }, 500);
+                                                }}
+                                                onKeyDown={async (e) => {
+                                                    if (e.key === 'Enter' && searchCode.trim()) {
+                                                        if (searchTimeoutRef.current) {
+                                                            clearTimeout(searchTimeoutRef.current);
+                                                        }
+                                                        await handleSearch(searchCode.trim());
+                                                    }
+                                                }}
+                                                placeholder="Quét hoặc nhập mã vị trí / pallet"
+                                                className=" w-full pl-9 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50
+                                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+
+                                            {searchCode && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSearchCode('');
+                                                        setSearchError('');
+                                                        setHighlightedPickAllocationId(null);
+                                                        setHighlightedDetailId(null);
+                                                        setSearching(false);
+
+                                                        if (searchTimeoutRef.current) {
+                                                            clearTimeout(searchTimeoutRef.current);
+                                                        }
+                                                    }}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors"
+                                                    title="Xóa"
+                                                >
+                                                    <X className="w-3.5 h-3.5 text-gray-500" />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {searching && (
+                                            <RefreshCw className="w-4 h-4 text-gray-600 animate-spin" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {searchError && (
+                                    <span className="text-xs text-red-600">
+                                        {searchError}
+                                    </span>
+                                )}
+                            </div>
+                        </Card>
+                    )}
 
                     {/* Status Groups */}
                     {disposalNote.disposalNoteDetails && disposalNote.disposalNoteDetails.length > 0 && (

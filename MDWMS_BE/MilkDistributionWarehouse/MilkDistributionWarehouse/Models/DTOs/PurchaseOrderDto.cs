@@ -14,6 +14,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int SupplierId { get; set; }
         public string? SupplierName { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public DateTime? EstimatedTimeArrival { get; set; }
     }
 
     public class PurchaseOrderDtoSaleRepresentative : PurchaseOrderDtoCommon

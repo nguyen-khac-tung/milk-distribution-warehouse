@@ -1186,7 +1186,7 @@ export default function InventoryReport({ onClose }) {
 
               {/* Top Products Bar Chart */}
               <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-700 mb-4">5 hàng hóa tồn kho</h3>
+                <h3 className="text-lg font-semibold text-slate-700 mb-4">5 hàng hóa tồn kho nhiều nhất</h3>
                 <TopProductsChart data={chartData.topProducts} />
                 {/* Total Products Summary - At bottom of chart card */}
                 <div className="mt-6 pt-6 border-t border-slate-200">
@@ -1452,7 +1452,7 @@ export default function InventoryReport({ onClose }) {
                         icon={Building2}
                         title="Không tìm thấy dữ liệu tồn kho"
                         description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                        colSpan={reportType === "current" ? 13 : 8}
+                        colSpan={reportType === "current" ? 11 : 10}
                       />
                     ) : (
                       displayData.map((item, index) => {
