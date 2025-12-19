@@ -55,7 +55,7 @@ export function PalletDetail({ palletId, onClose }) {
                 return (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-green-50 border border-green-200">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span className="text-sm font-medium text-green-700">Đã đưa vào vị trí</span>
+                        <span className="text-sm font-medium text-green-700">Đã xếp</span>
                     </div>
                 );
             case 2:
@@ -63,7 +63,7 @@ export function PalletDetail({ palletId, onClose }) {
                 return (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-red-50 border border-red-200">
                         <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span className="text-sm font-medium text-red-700">Chưa đưa vào vị trí</span>
+                        <span className="text-sm font-medium text-red-700">Chưa xếp</span>
                     </div>
                 );
             case 3:
