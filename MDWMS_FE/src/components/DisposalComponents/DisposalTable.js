@@ -187,7 +187,7 @@ const DisposalTable = ({
                                     onClick={() => handleSort("createdAt")}
                                 >
                                     <div className="flex items-center justify-center space-x-2 cursor-pointer">
-                                        <span>Ngày tạo</span>
+                                        <span>Thời gian tạo</span>
                                         {sortField === "createdAt" ? (
                                             sortAscending ? (
                                                 <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -234,7 +234,9 @@ const DisposalTable = ({
                                         {/* Người tạo */}
                                         {availableFields.hasCreatedByName && (
                                             <TableCell className="text-center px-6 py-4">
-                                                {request.createdByName || "-"}
+                                                <span className="text-yellow-600 font-medium">
+                                                    {request.createdByName || "-"}
+                                                </span>
                                             </TableCell>
                                         )}
 
@@ -259,14 +261,14 @@ const DisposalTable = ({
                                         )}
 
                                         {/* Thời gian xuất hủy */}
-                                        <TableCell className="text-center px-6 py-4">
-                                            {request.estimatedTimeDeparture ? (
-                                                <>
-                                                    {new Date(request.estimatedTimeDeparture).toLocaleDateString("vi-VN")}
-                                                </>
-                                            ) : (
-                                                "-"
-                                            )}
+                                        <TableCell className="text-left px-6 py-4">
+                                            {request.estimatedTimeDeparture
+                                                ? new Date(request.estimatedTimeDeparture).toLocaleString("vi-VN", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                })
+                                                : "-"}
                                         </TableCell>
 
                                         {/* Ngày tạo */}
