@@ -1452,7 +1452,7 @@ export default function InventoryReport({ onClose }) {
                         icon={Building2}
                         title="Không tìm thấy dữ liệu tồn kho"
                         description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                        colSpan={reportType === "current" ? 13 : 8}
+                        colSpan={reportType === "current" ? 11 : 10}
                       />
                     ) : (
                       displayData.map((item, index) => {
