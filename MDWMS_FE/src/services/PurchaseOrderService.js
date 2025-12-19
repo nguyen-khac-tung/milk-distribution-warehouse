@@ -16,7 +16,7 @@ export const getPurchaseOrderSaleManagers = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
+                ...(searchParams.estimatedTimeArrival !== undefined && { estimatedTimeArrival: searchParams.estimatedTimeArrival })
             }
         };
 
@@ -44,7 +44,7 @@ export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => 
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
+                ...(searchParams.estimatedTimeArrival !== undefined && { estimatedTimeArrival: searchParams.estimatedTimeArrival })
             }
         };
 
@@ -72,7 +72,7 @@ export const getPurchaseOrderWarehouseManagers = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
+                ...(searchParams.estimatedTimeArrival !== undefined && { estimatedTimeArrival: searchParams.estimatedTimeArrival })
             }
         };
 
@@ -100,7 +100,7 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
+                ...(searchParams.estimatedTimeArrival !== undefined && { estimatedTimeArrival: searchParams.estimatedTimeArrival })
             }
         };
 

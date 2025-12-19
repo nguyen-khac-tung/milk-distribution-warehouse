@@ -691,9 +691,9 @@ export default function GoodsReceiptDetail() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500 mb-0.5">Ngày cập nhật</div>
+                    <div className="text-xs text-gray-500 mb-0.5">Ngày dự kiến nhập</div>
                     <div className="text-base font-semibold text-gray-900">
-                      {goodsReceiptNote.updatedAt ? new Date(goodsReceiptNote.updatedAt).toLocaleDateString('vi-VN') : 'N/A'}
+                      {goodsReceiptNote.estimatedTimeArrival ? new Date(goodsReceiptNote.estimatedTimeArrival).toLocaleDateString('vi-VN') : 'N/A'}
                     </div>
                   </div>
                 </div>
@@ -1127,9 +1127,11 @@ export default function GoodsReceiptDetail() {
                     }
 
                     // Quản lý kho: CHỈ hiển thị nếu có item đang ở trạng thái PendingApproval (chờ duyệt)
+                    // HOẶC nếu phiếu đã hoàn thành (Completed) -> xem giống nhân viên kho
                     const hasPendingApprovalItems = checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval);
+                    const isCompleted = goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed;
 
-                    return hasPendingApprovalItems;
+                    return hasPendingApprovalItems || isCompleted;
                   })() ? (
                     <>
                       <div className="flex items-center justify-between mt-10 mb-3">
@@ -1200,10 +1202,12 @@ export default function GoodsReceiptDetail() {
                           </TableHeader>
                           <TableBody>
                             {(() => {
-                              // Quản lý kho: chỉ hiển thị items có status PendingApproval
+                              // Quản lý kho: chỉ hiển thị items có status PendingApproval (Trừ khi đã Completed -> xem hết)
                               // Nhân viên kho: hiển thị tất cả (Inspected, PendingApproval, Completed)
                               const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
-                              const filteredCheckedDetails = isWarehouseManager
+                              const isCompleted = goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed;
+
+                              const filteredCheckedDetails = (isWarehouseManager && !isCompleted)
                                 ? checkedDetails.filter(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval)
                                 : checkedDetails;
 
@@ -1346,89 +1350,95 @@ export default function GoodsReceiptDetail() {
         </Card>
 
         {/* Pallet - Ẩn cho quản lý kho */}
-        {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
-          <Card className="bg-gray-50 border border-slate-200 shadow-sm w-full">
-            <CardContent className="p-0">
-              <div
-                className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
-                onClick={() => toggleSection('pallet')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Plus className="w-5 h-5 text-orange-600" />
+        {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) &&
+          !(pallets.length > 0 && pallets.every(p => p.status != 2 && p.status != '2')) && (
+            <Card className="bg-gray-50 border border-slate-200 shadow-sm w-full">
+              <CardContent className="p-0">
+                <div
+                  className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  onClick={() => toggleSection('pallet')}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <Plus className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
+                      <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
-                    <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
+                  {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                </div>
+
+                {/* Luôn render PalletManager để giữ state, chỉ ẩn/hiện bằng CSS */}
+                <div className={`p-6 space-y-6 ${expandedSections.pallet ? '' : 'hidden'}`}>
+                  <div className="flex gap-3">
+                    {/* Ẩn nút "Thêm Lô Mới" cho nhân viên kho khi đã tạo pallet */}
+                    {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && palletCreated) && (
+                      <Button
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setShowCreateBatchModal(true)}
+                        disabled={goodsReceiptNote?.purchaseOrderStatus === 9}
+                      >
+                        <Plus className="w-4 h-4 mr-3" />
+                        Thêm Lô Mới
+                      </Button>
+                    )}
+                  </div>
+
+                  <PalletManager
+                    goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
+                    goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
+                    onRegisterSubmit={handleRegisterSubmit}
+                    onPalletCreated={handlePalletCreated}
+                    hasExistingPallets={pallets.length > 0}
+                    onSubmittingChange={handleSubmittingChange}
+                    onBatchCreated={handleBatchCreated}
+                    purchaseOrderStatus={goodsReceiptNote?.purchaseOrderStatus}
+                  />
+
+                  <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                    {!palletCreated && (
+                      <Button
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => submitPalletsFn && submitPalletsFn()}
+                        disabled={!submitPalletsFn || isSubmittingPallet || goodsReceiptNote?.purchaseOrderStatus === 9}
+                      >
+                        {isSubmittingPallet ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Đang tạo pallet...
+                          </>
+                        ) : (
+                          "Tạo pallet"
+                        )}
+                      </Button>
+                    )}
+                    {palletCreated && (
+                      <Button
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
+                        onClick={handleCompleteArranging}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Tiếp Tục Đến Sắp Xếp
+                      </Button>
+                    )}
                   </div>
                 </div>
-                {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-              </div>
-
-              {/* Luôn render PalletManager để giữ state, chỉ ẩn/hiện bằng CSS */}
-              <div className={`p-6 space-y-6 ${expandedSections.pallet ? '' : 'hidden'}`}>
-                <div className="flex gap-3">
-                  {/* Ẩn nút "Thêm Lô Mới" cho nhân viên kho khi đã tạo pallet */}
-                  {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && palletCreated) && (
-                    <Button
-                      className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={() => setShowCreateBatchModal(true)}
-                      disabled={goodsReceiptNote?.purchaseOrderStatus === 9}
-                    >
-                      <Plus className="w-4 h-4 mr-3" />
-                      Thêm Lô Mới
-                    </Button>
-                  )}
-                </div>
-
-                <PalletManager
-                  goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
-                  goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
-                  onRegisterSubmit={handleRegisterSubmit}
-                  onPalletCreated={handlePalletCreated}
-                  hasExistingPallets={pallets.length > 0}
-                  onSubmittingChange={handleSubmittingChange}
-                  onBatchCreated={handleBatchCreated}
-                  purchaseOrderStatus={goodsReceiptNote?.purchaseOrderStatus}
-                />
-
-                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-                  {!palletCreated && (
-                    <Button
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={() => submitPalletsFn && submitPalletsFn()}
-                      disabled={!submitPalletsFn || isSubmittingPallet || goodsReceiptNote?.purchaseOrderStatus === 9}
-                    >
-                      {isSubmittingPallet ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Đang tạo pallet...
-                        </>
-                      ) : (
-                        "Tạo pallet"
-                      )}
-                    </Button>
-                  )}
-                  {palletCreated && (
-                    <Button
-                      className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
-                      onClick={handleCompleteArranging}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Tiếp Tục Đến Sắp Xếp
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Sắp xếp - Hiển thị cho nhân viên kho hoặc quản lý kho (khi đã có pallet và phiếu đã được duyệt) */}
         {(() => {
+          // Check if all pallets are arranged
+          const allArranged = pallets.length > 0 && pallets.every(pallet => pallet.status != 2 && pallet.status != '2');
+
+          if (allArranged) return false;
+
           const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
 
-          // Nhân viên kho: luôn hiển thị
+          // Nhân viên kho: luôn hiển thị (nếu chưa arranged hết)
           if (!isWarehouseManager) {
             return true;
           }
@@ -1522,7 +1532,7 @@ export default function GoodsReceiptDetail() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {pallets.map((pallet, index) => {
+                              {pallets.filter(pallet => pallet.status === 2 || pallet.status === '2').map((pallet, index) => {
                                 // Lấy locationCode từ pallet
                                 const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
                                 // Chỉ hiển thị nút Add khi chưa có locationCode (chưa được gán vị trí)
