@@ -717,16 +717,16 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
             >
             </Button>
           </div>
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[4%] text-center"></TableHead>
+                <TableHead className="w-[5%] text-center"></TableHead>
                 <TableHead className="w-[20%]">Tên hàng hóa</TableHead>
-                <TableHead className="w-[14%]">Số Lô</TableHead>
+                <TableHead className="w-[20%]">Số Lô</TableHead>
                 <TableHead className="w-[12%] text-center">Đơn vị</TableHead>
-                <TableHead className="w-[10%] text-center">Đơn vị/thùng</TableHead>
-                <TableHead className="w-[12%] text-center">Số thùng</TableHead>
-                <TableHead className="w-[14%]">Tổng số đơn vị</TableHead>
+                <TableHead className="w-[10%] text-center">Đơn vị /thùng</TableHead>
+                <TableHead className="w-[11%] text-center">Số thùng</TableHead>
+                <TableHead className="w-[8%]">Tổng số đơn vị</TableHead>
                 <TableHead className="w-[8%] text-center">Hoạt động</TableHead>
               </TableRow>
             </TableHeader>
@@ -787,11 +787,12 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                                 type="button"
                                 onClick={() => setShowBatchDropdown(prev => ({ ...prev, [idx]: !prev[idx] }))}
                                 className="w-full h-[38px] px-3 py-2 text-left border border-slate-300 rounded-lg bg-white flex items-center justify-between focus:border-orange-500 focus:ring-orange-500 hover:border-orange-500"
+                                title={row.batchCode || 'Chọn số lô...'}
                               >
-                                <span className={row.batchCode ? 'text-slate-900' : 'text-slate-500'}>
+                                <span className={`flex-1 truncate text-left ${row.batchCode ? 'text-slate-900' : 'text-slate-500'}`}>
                                   {row.batchCode || 'Chọn số lô...'}
                                 </span>
-                                <ChevronDown className="h-4 w-4 text-slate-400" />
+                                <ChevronDown className="h-4 w-4 text-slate-400 flex-shrink-0 ml-2" />
                               </button>
 
                               {showBatchDropdown[idx] && (
@@ -858,11 +859,12 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                           ) : (
                             <input
                               type="text"
-                              className="w-full h-[38px] px-2 rounded border border-gray-300 text-sm focus:outline-none focus:border-orange-500"
+                              className="w-full h-[38px] px-2 rounded border border-gray-300 text-sm focus:outline-none focus:border-orange-500 truncate"
                               value={row.batchCode}
                               onChange={e => setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, batchCode: e.target.value } : r))}
                               placeholder="Chọn hàng hóa để tải số lô"
                               readOnly
+                              title={row.batchCode || ''}
                             />
                           )}
 
