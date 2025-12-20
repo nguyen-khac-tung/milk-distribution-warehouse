@@ -17,10 +17,12 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IGoodsPackingRepository _goodPackingRepository;
         private readonly IMapper _mapper;
-        public GoodsPackingService(IGoodsPackingRepository goodPackingRepository, IMapper mapper)
+        private readonly IInventoryLedgerRepository _inventoryLedgerRepository;
+        public GoodsPackingService(IGoodsPackingRepository goodPackingRepository, IMapper mapper, IInventoryLedgerRepository inventoryLedgerRepository)
         {
             _goodPackingRepository = goodPackingRepository;
             _mapper = mapper;
+            _inventoryLedgerRepository = inventoryLedgerRepository;
         }
 
         public async Task<(string, List<GoodsPackingDto>?)> GetGoodsPackingByGoodsId(int goodsId)
@@ -36,7 +38,6 @@ namespace MilkDistributionWarehouse.Services
         {
             try
             {
-
                 var goodsPackingsExist = await _goodPackingRepository.GetGoodsPackingsByGoodsId(goodsId);
 
                 if (goodsPackingsExist == null)
@@ -52,9 +53,13 @@ namespace MilkDistributionWarehouse.Services
 
                 foreach (var p in packingToRemove)
                 {
-                    var hasAnyTransaction = await HasAnyTransaction(p.GoodsPackingId);
+                    var hasAnyTransaction = await HasAnyTransaction(p.GoodsPackingId, goodsId);
                     if (!string.IsNullOrEmpty(hasAnyTransaction))
                         throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasAnyTransaction);
+
+                    var resultLedgers = await _inventoryLedgerRepository.DeleteInventoryLedger(p.GoodsPackingId, goodsId);
+                    if (resultLedgers == 0)
+                        throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
 
                     var resultRemove = await _goodPackingRepository.DeleteGoodsPacking(p);
                     if (resultRemove == null)
@@ -70,7 +75,7 @@ namespace MilkDistributionWarehouse.Services
 
                         if (existingGoodsPacking != null && p.UnitPerPackage != existingGoodsPacking.UnitPerPackage)
                         {
-                            var hasRelatedTransaction = await HasRelatedTransaction(p.GoodsPackingId);
+                            var hasRelatedTransaction = await HasRelatedTransaction(p.GoodsPackingId, goodsId);
                             if (!string.IsNullOrEmpty(hasRelatedTransaction))
                                 throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasRelatedTransaction);
 
@@ -94,6 +99,21 @@ namespace MilkDistributionWarehouse.Services
                         var resultCreate = await _goodPackingRepository.CreateGoodsPacking(newGoodsPacking);
                         if (resultCreate == null)
                             throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
+
+                        var inventoryLedger = new InventoryLedger()
+                        {
+                            GoodsId = goodsId,
+                            GoodPackingId = resultCreate.GoodsPackingId,
+                            InQty = 0,
+                            OutQty = 0,
+                            BalanceAfter = 0,
+                            TypeChange = null,
+                            EventDate = DateTimeUtility.Now()
+                        };
+
+                        var resultLedger = await _inventoryLedgerRepository.CreateInventoryLedger(inventoryLedger);
+                        if (resultLedger == null)
+                            throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
                     }
                 }
 
@@ -106,7 +126,7 @@ namespace MilkDistributionWarehouse.Services
 
         }
 
-        private async Task<string> HasRelatedTransaction(int goodsPackingId)
+        private async Task<string> HasRelatedTransaction(int goodsPackingId, int goodsId)
         {
             var hasRelatedPO = await _goodPackingRepository.HasActivePurchaseOrder(goodsPackingId);
             if (hasRelatedPO) return "Có đơn đặt hàng đang sử dụng.";
@@ -129,7 +149,7 @@ namespace MilkDistributionWarehouse.Services
             var hasRelatedPallet = await _goodPackingRepository.HasActiveAndDeletedPallet(goodsPackingId);
             if (hasRelatedPallet) return "Có pallet đang được sử dụng.";
 
-            var hasInventoryLedger = await _goodPackingRepository.HasInventoryLedgers(goodsPackingId);
+            var hasInventoryLedger = await _goodPackingRepository.HasInventoryLedgers(goodsPackingId, goodsId);
             if (hasInventoryLedger) return "Có sổ cái tồn kho đang liên kết.";
 
             var hasBackOrder = await _goodPackingRepository.HasBackOrder(goodsPackingId);
@@ -138,7 +158,7 @@ namespace MilkDistributionWarehouse.Services
             return "";
         }
 
-        private async Task<string> HasAnyTransaction(int goodsPackingId)
+        private async Task<string> HasAnyTransaction(int goodsPackingId, int goodsId)
         {
             var isPO = await _goodPackingRepository.IsPurchaseOrderByGoodsPackingId(goodsPackingId);
             if (isPO) return "Có đơn đặt hàng đang liên kết.";
@@ -161,7 +181,7 @@ namespace MilkDistributionWarehouse.Services
             var isPallet = await _goodPackingRepository.IsPalletByGoodsPackingId(goodsPackingId);
             if (isPallet) return "Có pallet đang liên kết.";
 
-            var isInventoryLedger = await _goodPackingRepository.IsInventoryLedgers(goodsPackingId);
+            var isInventoryLedger = await _goodPackingRepository.IsInventoryLedgers(goodsPackingId, goodsId);
             if (isInventoryLedger) return "Có sổ cái tồn kho đang liên kết.";
 
             var isBackOrder = await _goodPackingRepository.IsExistBackOrder(goodsPackingId);
