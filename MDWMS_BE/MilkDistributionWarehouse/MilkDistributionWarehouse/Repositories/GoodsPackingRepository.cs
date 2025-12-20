@@ -20,7 +20,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasActiveGoodsIssueNote(int goodsPackingId);
         Task<bool> HasActiveDisposalNote(int goodsPackingId);
         Task<bool> HasActiveAndDeletedPallet(int goodsPackingId);
-        Task<bool> HasInventoryLedgers(int goodsPackingId);
+        Task<bool> HasInventoryLedgers(int goodsPackingId, int goodsId);
         Task<bool> HasBackOrder(int goodsPackingId);
         Task<bool> IsPurchaseOrderByGoodsPackingId(int goodsPackingId);
         Task<bool> IsSalesOrderByGoodsPackingId(int goodsPackingId);
@@ -29,7 +29,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsPalletByGoodsPackingId(int goodsPackingId);
         Task<bool> IsDisposalRequestByGoodsPackingId(int goodsPackingId);
         Task<bool> IsDisposalNoteByGoodsPackingId(int goodsPackingId);
-        Task<bool> IsInventoryLedgers(int goodsPackingId);
+        Task<bool> IsInventoryLedgers(int goodsPackingId, int goodsId);
         Task<bool> IsExistBackOrder(int goodsPackingId);
     }
 
@@ -151,10 +151,17 @@ namespace MilkDistributionWarehouse.Repositories
                 //.AnyAsync(p => p.Status != CommonStatus.Inactive && p.GoodsPackingId == goodsPackingId);
                 .AnyAsync(p => p.GoodsPackingId == goodsPackingId);
         }
-        public async Task<bool> HasInventoryLedgers(int goodsPackingId)
+        public async Task<bool> HasInventoryLedgers(int goodsPackingId, int goodsId)
         {
             return await _context.InventoryLedgers
-                .AnyAsync(il => il.GoodPackingId == goodsPackingId);
+                .AnyAsync(il => 
+                    il.GoodPackingId == goodsPackingId && 
+                    il.GoodsId == goodsId &&
+                    (il.TypeChange == InventoryLegerTypeChange.Receipt || 
+                    il.TypeChange == InventoryLegerTypeChange.Issue || 
+                    il.TypeChange == InventoryLegerTypeChange.Disposal || 
+                    il.TypeChange == InventoryLegerTypeChange.Stocktaking)
+                );
         }
         public async Task<bool> HasBackOrder(int goodsPackingId)
         {
@@ -204,10 +211,17 @@ namespace MilkDistributionWarehouse.Repositories
                 .AnyAsync(p => p.GoodsPackingId == goodsPackingId);
         }
 
-        public async Task<bool> IsInventoryLedgers(int goodsPackingId)
+        public async Task<bool> IsInventoryLedgers(int goodsPackingId, int goodsId)
         {
             return await _context.InventoryLedgers
-                .AnyAsync(il => il.GoodPackingId == goodsPackingId);
+                .AnyAsync(il =>
+                    il.GoodPackingId == goodsPackingId &&
+                    il.GoodsId == goodsId &&
+                    (il.TypeChange == InventoryLegerTypeChange.Receipt ||
+                    il.TypeChange == InventoryLegerTypeChange.Issue ||
+                    il.TypeChange == InventoryLegerTypeChange.Disposal ||
+                    il.TypeChange == InventoryLegerTypeChange.Stocktaking)
+                );
         }
         public async Task<bool> IsExistBackOrder(int goodsPackingId)
         {
