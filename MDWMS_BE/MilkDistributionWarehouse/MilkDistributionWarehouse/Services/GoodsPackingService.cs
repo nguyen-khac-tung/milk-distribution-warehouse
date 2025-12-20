@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
-using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -36,129 +34,97 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<List<GoodsPackingDto>>(goodsPackings));
         }
 
-        public async Task<(string, List<GoodsPackingUpdate>?)> UpdateGoodsPacking(
-            int goodsId,
-            List<GoodsPackingUpdate> updates)
+        public async Task<(string, List<GoodsPackingUpdate>?)> UpdateGoodsPacking(int goodsId, List<GoodsPackingUpdate> updates)
         {
             try
             {
-                var goodsPackingsExist =
-                    await _goodPackingRepository.GetGoodsPackingsByGoodsId(goodsId);
+                var goodsPackingsExist = await _goodPackingRepository.GetGoodsPackingsByGoodsId(goodsId);
 
-                if (goodsPackingsExist == null || !goodsPackingsExist.Any())
-                    return ("", updates);
+                if (goodsPackingsExist == null)
+                    throw new Exception("Danh sách số lượng đóng gói hàng hoá trống.");
 
-                var existingByUnit = goodsPackingsExist
-                    .GroupBy(x => x.UnitPerPackage)
-                    .ToDictionary(g => g.Key, g => g.First());
+                var updateIds = updates
+                    .Where(gp => gp.GoodsPackingId > 0)
+                    .Select(gp => gp.GoodsPackingId);
 
-                var updateByUnit = updates
-                    .GroupBy(x => x.UnitPerPackage)
-                    .ToDictionary(g => g.Key, g => g.First());
-                
-                var packingsToRemove = goodsPackingsExist
-                    .Where(p =>
-                        !updateByUnit.ContainsKey((int)p.UnitPerPackage) // FE không còn unit này
-                    )
+                var packingToRemove = goodsPackingsExist
+                    .Where(gp => !updateIds.Contains(gp.GoodsPackingId))
                     .ToList();
 
-                foreach (var p in packingsToRemove)
+                foreach (var p in packingToRemove)
                 {
-                    var hasTransaction = await HasAnyTransaction(p.GoodsPackingId, goodsId);
-                    if (!string.IsNullOrEmpty(hasTransaction))
-                    {
-                        continue;
-                    }
+                    var hasAnyTransaction = await HasAnyTransaction(p.GoodsPackingId, goodsId);
+                    if (!string.IsNullOrEmpty(hasAnyTransaction))
+                        throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasAnyTransaction);
 
-                    var resultLedgers =
-                        await _inventoryLedgerRepository.DeleteInventoryLedger(
-                            p.GoodsPackingId, goodsId);
-
+                    var resultLedgers = await _inventoryLedgerRepository.DeleteInventoryLedger(p.GoodsPackingId, goodsId);
                     if (resultLedgers == 0)
                         throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
 
-                    var resultRemove =
-                        await _goodPackingRepository.DeleteGoodsPacking(p);
-
+                    var resultRemove = await _goodPackingRepository.DeleteGoodsPacking(p);
                     if (resultRemove == null)
                         throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
                 }
-                foreach (var u in updates)
+
+                foreach (var p in updates)
                 {
-                    if (existingByUnit.TryGetValue(u.UnitPerPackage, out var existPacking))
+                    if (p.GoodsPackingId > 0)
                     {
-                        continue;
-                    }
+                        var existingGoodsPacking = goodsPackingsExist
+                            .FirstOrDefault(gp => gp.GoodsPackingId == p.GoodsPackingId);
 
-                    if (u.GoodsPackingId > 0)
-                    {
-                        var packing =
-                            goodsPackingsExist.FirstOrDefault(
-                                x => x.GoodsPackingId == u.GoodsPackingId);
-
-                        if (packing != null &&
-                            packing.UnitPerPackage != u.UnitPerPackage)
+                        if (existingGoodsPacking != null && p.UnitPerPackage != existingGoodsPacking.UnitPerPackage)
                         {
-                            var hasRelated =
-                                await HasRelatedTransaction(
-                                    packing.GoodsPackingId, goodsId);
+                            var hasRelatedTransaction = await HasRelatedTransaction(p.GoodsPackingId, goodsId);
+                            if (!string.IsNullOrEmpty(hasRelatedTransaction))
+                                throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasRelatedTransaction);
 
-                            if (!string.IsNullOrEmpty(hasRelated))
-                                throw new Exception(
-                                    "Cập nhật số lượng đóng gói hàng hoá thất bại." +
-                                    hasRelated);
+                            existingGoodsPacking.UnitPerPackage = p.UnitPerPackage;
 
-                            packing.UnitPerPackage = u.UnitPerPackage;
-
-                            var result =
-                                await _goodPackingRepository.UpdateGoodsPacking(packing);
-
-                            if (result == 0)
+                            var resultUpdate = await _goodPackingRepository.UpdateGoodsPacking(existingGoodsPacking);
+                            if (resultUpdate == 0)
                                 throw new Exception("Cập nhật quy cách đóng gói thất bại.");
                         }
-
-                        continue;
                     }
-                    var newPacking = new GoodsPacking
+                    else
                     {
-                        GoodsId = goodsId,
-                        UnitPerPackage = u.UnitPerPackage,
-                        Status = CommonStatus.Active
-                    };
+                        var newGoodsPackingCreate = new GoodsPackingCreateDto()
+                        {
+                            UnitPerPackage = p.UnitPerPackage,
+                            GoodsId = goodsId
+                        };
 
-                    var resultCreate =
-                        await _goodPackingRepository.CreateGoodsPacking(newPacking);
+                        var newGoodsPacking = _mapper.Map<GoodsPacking>(newGoodsPackingCreate);
 
-                    if (resultCreate == null)
-                        throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
+                        var resultCreate = await _goodPackingRepository.CreateGoodsPacking(newGoodsPacking);
+                        if (resultCreate == null)
+                            throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
 
-                    var inventoryLedger =
-                        new InventoryLedger
+                        var inventoryLedger = new InventoryLedger()
                         {
                             GoodsId = goodsId,
-                            GoodPackingId = newPacking.GoodsPackingId,
-                            EventDate = DateTimeUtility.Now(),
+                            GoodPackingId = resultCreate.GoodsPackingId,
                             InQty = 0,
                             OutQty = 0,
                             BalanceAfter = 0,
-                            TypeChange = null
+                            TypeChange = null,
+                            EventDate = DateTimeUtility.Now()
                         };
 
-                    var resultCreateInventory = 
-                        await _inventoryLedgerRepository.CreateInventoryLedger(inventoryLedger);
-
-                    if (resultCreateInventory == null)
-                        throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
+                        var resultLedger = await _inventoryLedgerRepository.CreateInventoryLedger(inventoryLedger);
+                        if (resultLedger == null)
+                            throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
+                    }
                 }
 
                 return ("", updates);
             }
             catch (Exception ex)
             {
-                return (ex.Message.ToMessageForUser(), default);
+                return ($"{ex.Message}".ToMessageForUser(), default);
             }
-        }
 
+        }
 
         private async Task<string> HasRelatedTransaction(int goodsPackingId, int goodsId)
         {
