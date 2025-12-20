@@ -21,15 +21,9 @@ const CreateDisposal = () => {
     const [loading, setLoading] = useState(true);
     const [expiredGoods, setExpiredGoods] = useState([]);
     const [selectedItems, setSelectedItems] = useState(new Map());
-    const [formData, setFormData] = useState(() => {
-        const d = new Date();
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return {
-            estimatedTimeDeparture: `${yyyy}-${mm}-${dd}`,
-            note: ''
-        };
+    const [formData, setFormData] = useState({
+        estimatedTimeDeparture: '',
+        note: ''
     });
     const [fieldErrors, setFieldErrors] = useState({});
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
@@ -386,16 +380,6 @@ const CreateDisposal = () => {
         // Validate estimatedTimeDeparture
         if (!formData.estimatedTimeDeparture) {
             errors.estimatedTimeDeparture = "Vui lòng chọn ngày dự kiến xuất hủy";
-        } else {
-            const selectedDate = new Date(formData.estimatedTimeDeparture);
-            selectedDate.setHours(0, 0, 0, 0);
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            if (selectedDate < today) {
-                errors.estimatedTimeDeparture = "Ngày xuất hủy không được là ngày trong quá khứ";
-            }
         }
 
         // Validate selected items
@@ -591,14 +575,22 @@ const CreateDisposal = () => {
                                                 min={minDate}
                                                 value={formData.estimatedTimeDeparture}
                                                 onChange={(e) => {
-                                                    setFormData(prev => ({ ...prev, estimatedTimeDeparture: e.target.value }));
-                                                    if (fieldErrors.estimatedTimeDeparture) {
-                                                        setFieldErrors(prev => {
-                                                            const newErrors = { ...prev };
+                                                    const value = e.target.value;
+                                                    setFormData(prev => ({ ...prev, estimatedTimeDeparture: value }));
+                                                    
+                                                    // Clear or update validation errors in real-time when the user edits the field
+                                                    setFieldErrors(prevErrors => {
+                                                        const newErrors = { ...prevErrors };
+                                                        
+                                                        if (!value) {
+                                                            newErrors.estimatedTimeDeparture = "Vui lòng chọn ngày dự kiến xuất hủy";
+                                                        } else {
+                                                            // Clear error if date is selected
                                                             delete newErrors.estimatedTimeDeparture;
-                                                            return newErrors;
-                                                        });
-                                                    }
+                                                        }
+                                                        
+                                                        return newErrors;
+                                                    });
                                                 }}
                                                 ref={dateInputRef}
                                                 className={`date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full ${fieldErrors.estimatedTimeDeparture ? 'border-red-500' : ''}`}
