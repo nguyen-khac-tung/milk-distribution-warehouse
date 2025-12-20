@@ -167,7 +167,7 @@ const SearchBar = () => {
     {
       id: "unitMeasures",
       title: "Quản lý đơn vị",
-      description: "Quản lý đơn vị đo lường",
+      description: "Quản lý đơn vị",
       icon: Scale,
       path: "/unit-measures",
       category: "QUẢN LÝ HÀNG HÓA",

@@ -731,7 +731,7 @@ export default function SearchFilterToggle({
                       ${categoryFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {categoryFilter ? categories.find(c => c.categoryId.toString() === categoryFilter)?.categoryName || "Chọn danh mục" : "Tất cả danh mục"}
+                      {categoryFilter ? categories.find(c => c.categoryId.toString() === categoryFilter)?.categoryName || "Chọn phân loại" : "Tất cả phân loại"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>
@@ -745,7 +745,7 @@ export default function SearchFilterToggle({
                             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
                               type="text"
-                              placeholder="Tìm kiếm danh mục..."
+                              placeholder="Tìm kiếm phân loại..."
                               value={categorySearchQuery}
                               onChange={(e) => setCategorySearchQuery && setCategorySearchQuery(e.target.value)}
                               className="pl-8 pr-8 h-8 text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500"
@@ -771,7 +771,7 @@ export default function SearchFilterToggle({
                           onClick={() => { clearCategoryFilter(); setShowCategoryFilter(false); if (setCategorySearchQuery) setCategorySearchQuery(""); }}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                         >
-                          Tất cả danh mục
+                          Tất cả phân loại
                         </button>
                         {(filteredCategories || categories).length > 0 ? (
                           (filteredCategories || categories).map((category) => (

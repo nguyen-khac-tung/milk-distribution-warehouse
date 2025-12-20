@@ -399,7 +399,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
               backendErrors.goodsCode = cleanErrorMessage(error.response.data.message)
             } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên hàng hóa')) {
               backendErrors.goodsName = cleanErrorMessage(error.response.data.message)
-            } else if (errorMessage.includes('category') || errorMessage.includes('danh mục')) {
+            } else if (errorMessage.includes('category') || errorMessage.includes('phân loại')) {
               backendErrors.categoryId = cleanErrorMessage(error.response.data.message)
             } else if (errorMessage.includes('supplier') || errorMessage.includes('nhà cung cấp')) {
               backendErrors.supplierId = cleanErrorMessage(error.response.data.message)
@@ -609,7 +609,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <Label htmlFor="defaultCategory" className="text-sm font-medium text-orange-700">
-                        Danh mục mặc định
+                        Phân loại mặc định
                       </Label>
                     </div>
                     <FloatingDropdown
@@ -625,7 +625,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         value: category.categoryId.toString(),
                         label: category.categoryName,
                       }))}
-                      placeholder="Chọn danh mục mặc định..."
+                      placeholder="Chọn phân loại mặc định..."
                       loading={loadingData}
                     />
                   </div>
@@ -851,7 +851,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Category */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Danh mục <span className="text-red-500">*</span>
+                          Phân loại <span className="text-red-500">*</span>
                         </Label>
                         <FloatingDropdown
                           value={goods.categoryId ? goods.categoryId.toString() : null}
@@ -861,7 +861,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             value: category.categoryId.toString(),
                             label: category.categoryName,
                           }))}
-                          placeholder="Chọn danh mục..."
+                          placeholder="Chọn phân loại..."
                           loading={loadingData}
                         />
                         {errors[`${index}-categoryId`] && (
@@ -971,7 +971,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             className="h-8 px-3 text-xs border-orange-500 text-orange-500 hover:bg-orange-50"
                           >
                             <Plus className="h-3 w-3 mr-1" />
-                            Thêm quy cách
+                            Thêm quy cách đóng gói
                           </Button>
                         )}
                       </div>

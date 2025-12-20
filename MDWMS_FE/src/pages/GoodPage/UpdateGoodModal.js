@@ -234,7 +234,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     }
 
     if (!formData.categoryId || formData.categoryId === 0) {
-      errors.categoryId = "Vui lòng chọn danh mục"
+      errors.categoryId = "Vui lòng chọn phân loại"
     }
 
     if (!formData.supplierId || formData.supplierId === 0) {
@@ -361,7 +361,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="categoryId" className="text-sm font-medium text-slate-700">
-                  Danh mục <span className="text-red-500">*</span>
+                  Phân loại <span className="text-red-500">*</span>
                 </Label>
                 <FloatingDropdown
                   value={formData.categoryId ? formData.categoryId.toString() : null}
@@ -378,7 +378,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                     value: category.categoryId.toString(),
                     label: category.categoryName,
                   }))}
-                  placeholder="Chọn danh mục..."
+                  placeholder="Chọn phân loại..."
                   loading={loadingData}
                   disabled={isDisable}
                 />

@@ -60,7 +60,7 @@ export function ProductDetail({ product, onClose }) {
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
                   <InfoRow icon={<ComponentIcon name="box" size={16} color="#6b7280" />} label="Đơn vị" value={product.unitMeasureName || 'N/A'} />
-                  <InfoRow icon={<ComponentIcon name="category" size={16} color="#6b7280" />} label="Danh mục" value={product.categoryName || 'N/A'} />
+                  <InfoRow icon={<ComponentIcon name="category" size={16} color="#6b7280" />} label="Phân loại" value={product.categoryName || 'N/A'} />
                   <InfoRow icon={<ComponentIcon name="tag" size={16} color="#6b7280" />} label="Thương hiệu" value={product.brandName || 'N/A'} />
                 </div>
               </CardContent>
@@ -104,7 +104,7 @@ export function ProductDetail({ product, onClose }) {
                         <span className="text-2xl font-bold text-slate-800">{packing.unitPerPackage}</span>
                         <span className="text-slate-500 text-sm">{product.unitMeasureName || 'đơn vị'}</span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">Số {product.unitMeasureName || 'đơn vị'} trên 1 thùng</p>
+                      <p className="mt-1 text-xs text-slate-500">Số {product.unitMeasureName || 'đơn vị'} trong 1 thùng</p>
                     </div>
                   ))}
                 </div>

@@ -38,7 +38,7 @@ namespace MilkDistributionWarehouse.Services
             var items = await categoryDtos.ToPagedResultAsync(request);
 
             if (!items.Items.Any())
-                return ("Danh sách danh mục trống.".ToMessageForUser(), new PageResult<CategoryDto> { });
+                return ("Danh sách phân loại trống.".ToMessageForUser(), new PageResult<CategoryDto> { });
 
             return ("", items);
         }
@@ -51,7 +51,7 @@ namespace MilkDistributionWarehouse.Services
             var categoryDropDown = _mapper.Map<List<CategoryDropDown>>(categories);
 
             if (!categoryDropDown.Any())
-                return ("Danh sách danh mục trống.".ToMessageForUser(), new List<CategoryDropDown>());
+                return ("Danh sách phân loại trống.".ToMessageForUser(), new List<CategoryDropDown>());
 
             return ("", categoryDropDown);
         }
@@ -84,13 +84,13 @@ namespace MilkDistributionWarehouse.Services
 
 
             if (await _categoryRepository.IsDuplicationByName(categoryUpdate.CategoryId, categoryUpdate.CategoryName))
-                return ("Tên danh mục đã tồn tại trong hệ thống".ToMessageForUser(), new CategoryDto());
+                return ("Tên phân loại đã tồn tại trong hệ thống".ToMessageForUser(), new CategoryDto());
 
             _mapper.Map(categoryUpdate, categoryExist);
 
             var updateResult = await _categoryRepository.UpdateCategory(categoryExist);
             if (updateResult == null)
-                return ("Cập nhật danh mục thất bại".ToMessageForUser(), new CategoryDto());
+                return ("Cập nhật phân loại thất bại".ToMessageForUser(), new CategoryDto());
 
             return ("", _mapper.Map<CategoryDto>(categoryExist));
         }
@@ -106,7 +106,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Category is not exist", new CategoryUpdateStatus());
 
             if (categoryExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
-                return ("Danh mục đã bị xóa hoặc không thể chuyển sang trạng thái đã xóa".ToMessageForUser(), new CategoryUpdateStatus());
+                return ("Phân loại đã bị xóa hoặc không thể chuyển sang trạng thái đã xóa".ToMessageForUser(), new CategoryUpdateStatus());
 
             bool isChangingToInactive = categoryExist.Status != CommonStatus.Inactive
                                && update.Status == CommonStatus.Inactive;
@@ -116,7 +116,7 @@ namespace MilkDistributionWarehouse.Services
                 var allGoodsInactive = await _categoryRepository.IsCategoryContainingGoodsInActive(update.CategoryId);
 
                 if (!allGoodsInactive)
-                    return ("Danh mục không thể vô hiệu hoá vì có sản phẩm đang liên kết với danh mục".ToMessageForUser(), new CategoryUpdateStatus());
+                    return ("Phân loại không thể vô hiệu hoá vì có sản phẩm đang liên kết với phân loại".ToMessageForUser(), new CategoryUpdateStatus());
             }
 
             categoryExist.Status = update.Status;
@@ -125,7 +125,7 @@ namespace MilkDistributionWarehouse.Services
             var updateResult = await _categoryRepository.UpdateCategory(categoryExist);
 
             if(updateResult == null)
-                return ("Cập nhật danh mục thất bại.".ToMessageForUser(), new CategoryUpdateStatus());
+                return ("Cập nhật phân loại thất bại.".ToMessageForUser(), new CategoryUpdateStatus());
 
             return ("", update);
         }
@@ -141,14 +141,14 @@ namespace MilkDistributionWarehouse.Services
                 return ("Category is not exist", new CategoryDto());
 
             if (await _categoryRepository.IsCategoryContainingGoodsAsync(categoryId))
-                return ("Không thể xoá danh mục, danh mục đang được liên kết với sản phẩm".ToMessageForUser(), new CategoryDto());
+                return ("Không thể xoá phân loại, phân loại đang được liên kết với sản phẩm".ToMessageForUser(), new CategoryDto());
 
             categoryExist.Status = CommonStatus.Deleted;
             categoryExist.UpdateAt = DateTimeUtility.Now();
 
             var resultDelete = await _categoryRepository.UpdateCategory(categoryExist);
             if (resultDelete == null)
-                return ("Xoá danh mục thất bại".ToMessageForUser(), new CategoryDto());
+                return ("Xoá phân loại thất bại".ToMessageForUser(), new CategoryDto());
 
             return ("", _mapper.Map<CategoryDto>(resultDelete));
         }
