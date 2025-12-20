@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "../../components/ui/button"
@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog"
 import { Badge } from "../../components/ui/badge"
-import { ChevronDown } from "lucide-react"
+
 import { getStocktakingListForWarehouseManager } from "../../services/StocktakingService"
 import { getGoodsReceiptReport, getGoodsIssueReport } from "../../services/DashboardService"
 import dayjs from "dayjs"
@@ -24,9 +24,6 @@ export default function WarehouseEventCalendar() {
   const [currentMonth, setCurrentMonth] = useState(dayjs())
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDateEventsModal, setShowDateEventsModal] = useState(false)
-  const [viewMode, setViewMode] = useState("month") // "month", "week", "day"
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef(null)
 
   // Fetch all calendar events (fetch all data, then filter by view mode)
   useEffect(() => {
@@ -231,40 +228,15 @@ export default function WarehouseEventCalendar() {
     fetchAllCalendarEvents()
   }, []) // Only fetch once on mount
 
-  // Filter events based on view mode
+  // Filter events for current month
   useEffect(() => {
-    let filteredEvents = []
-
-    if (viewMode === "month") {
-      // Filter events for current month
-      filteredEvents = allEvents.filter(event => {
-        if (!event.eventDate) return false
-        return event.eventDate.month() === currentMonth.month() &&
-          event.eventDate.year() === currentMonth.year()
-      })
-    } else if (viewMode === "week") {
-      // Filter events for current week (Sunday to Saturday)
-      const startOfWeek = currentMonth.startOf("week") // Sunday
-      const endOfWeek = currentMonth.endOf("week") // Saturday
-
-      filteredEvents = allEvents.filter(event => {
-        if (!event.eventDate) return false
-        const eventDay = event.eventDate.startOf("day")
-        const startDay = startOfWeek.startOf("day")
-        const endDay = endOfWeek.startOf("day")
-        return (eventDay.isAfter(startDay, "day") || eventDay.isSame(startDay, "day")) &&
-          (eventDay.isBefore(endDay, "day") || eventDay.isSame(endDay, "day"))
-      })
-    } else if (viewMode === "day") {
-      // Filter events for current day
-      filteredEvents = allEvents.filter(event => {
-        if (!event.eventDate) return false
-        return event.eventDate.isSame(currentMonth, "day")
-      })
-    }
-
+    const filteredEvents = allEvents.filter(event => {
+      if (!event.eventDate) return false
+      return event.eventDate.month() === currentMonth.month() &&
+        event.eventDate.year() === currentMonth.year()
+    })
     setCalendarEvents(filteredEvents)
-  }, [allEvents, viewMode, currentMonth])
+  }, [allEvents, currentMonth])
 
   const getEventColor = (type) => {
     switch (type) {
@@ -306,36 +278,15 @@ export default function WarehouseEventCalendar() {
   }
 
   const getNavigationLabel = () => {
-    if (viewMode === "month") {
-      return currentMonth.format("MM/YYYY")
-    } else if (viewMode === "week") {
-      const startOfWeek = currentMonth.startOf("week")
-      const endOfWeek = currentMonth.endOf("week")
-      return `${startOfWeek.format("DD/MM")} - ${endOfWeek.format("DD/MM/YYYY")}`
-    } else if (viewMode === "day") {
-      return currentMonth.format("DD/MM/YYYY")
-    }
     return currentMonth.format("MM/YYYY")
   }
 
   const handlePrevious = () => {
-    if (viewMode === "month") {
-      setCurrentMonth(prev => prev.subtract(1, "month"))
-    } else if (viewMode === "week") {
-      setCurrentMonth(prev => prev.subtract(1, "week"))
-    } else if (viewMode === "day") {
-      setCurrentMonth(prev => prev.subtract(1, "day"))
-    }
+    setCurrentMonth(prev => prev.subtract(1, "month"))
   }
 
   const handleNext = () => {
-    if (viewMode === "month") {
-      setCurrentMonth(prev => prev.add(1, "month"))
-    } else if (viewMode === "week") {
-      setCurrentMonth(prev => prev.add(1, "week"))
-    } else if (viewMode === "day") {
-      setCurrentMonth(prev => prev.add(1, "day"))
-    }
+    setCurrentMonth(prev => prev.add(1, "month"))
   }
 
   // Memoize selected date events to ensure they update when selectedDate or allEvents change
@@ -443,18 +394,7 @@ export default function WarehouseEventCalendar() {
     if (selectedDate) {
       return `Sự kiện trong ngày ${selectedDate.format("DD/MM/YYYY")}`
     }
-
-    // Otherwise, show events based on viewMode
-    if (viewMode === "month") {
-      return `Sự kiện trong tháng ${currentMonth.format("MM/YYYY")}`
-    } else if (viewMode === "week") {
-      const startOfWeek = currentMonth.startOf("week")
-      const endOfWeek = currentMonth.endOf("week")
-      return `Sự kiện trong tuần ${startOfWeek.format("DD/MM")} - ${endOfWeek.format("DD/MM/YYYY")}`
-    } else if (viewMode === "day") {
-      return `Sự kiện trong ngày ${currentMonth.format("DD/MM/YYYY")}`
-    }
-    return "Sự kiện"
+    return `Sự kiện trong tháng ${currentMonth.format("MM/YYYY")}`
   }
 
   // Get events to display in the list below calendar
@@ -463,45 +403,10 @@ export default function WarehouseEventCalendar() {
     if (selectedDate) {
       return selectedDateEvents
     }
-
-    // Otherwise, show events based on viewMode (calendarEvents)
     return calendarEvents
   }, [selectedDate, selectedDateEvents, calendarEvents])
 
-  const getViewModeLabel = () => {
-    switch (viewMode) {
-      case "month":
-        return "Tháng"
-      case "week":
-        return "Tuần"
-      case "day":
-        return "Ngày"
-      default:
-        return "Tháng"
-    }
-  }
 
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false)
-      }
-    }
-
-    if (dropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [dropdownOpen])
-
-  const handleViewModeChange = (mode) => {
-    setViewMode(mode)
-    setDropdownOpen(false)
-  }
 
   return (
     <>
@@ -509,38 +414,6 @@ export default function WarehouseEventCalendar() {
         <CardHeader className="p-4 pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Lịch sự kiện kho</CardTitle>
-            <div ref={dropdownRef} className="relative">
-              <Button
-                variant="outline"
-                className="h-8 w-[120px] text-xs justify-between"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              >
-                <span>{getViewModeLabel()}</span>
-                <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-1 z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white p-1 shadow-md">
-                  <div
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => handleViewModeChange("month")}
-                  >
-                    Tháng
-                  </div>
-                  <div
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => handleViewModeChange("week")}
-                  >
-                    Tuần
-                  </div>
-                  <div
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => handleViewModeChange("day")}
-                  >
-                    Ngày
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </CardHeader>
         <CardContent className="p-4">
@@ -565,108 +438,104 @@ export default function WarehouseEventCalendar() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          {viewMode === "month" && (
-            <>
-              <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
-                <div className="py-1 font-medium text-gray-600">CN</div>
-                <div className="py-1 font-medium text-gray-600">T2</div>
-                <div className="py-1 font-medium text-gray-600">T3</div>
-                <div className="py-1 font-medium text-gray-600">T4</div>
-                <div className="py-1 font-medium text-gray-600">T5</div>
-                <div className="py-1 font-medium text-gray-600">T6</div>
-                <div className="py-1 font-medium text-gray-600">T7</div>
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                {(() => {
-                  const firstDayOfMonth = currentMonth.startOf("month")
-                  const lastDayOfMonth = currentMonth.endOf("month")
-                  const daysInMonth = lastDayOfMonth.date()
-                  const startingDayOfWeek = firstDayOfMonth.day()
-                  const days = []
+          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+            <div className="py-1 font-medium text-gray-600">CN</div>
+            <div className="py-1 font-medium text-gray-600">T2</div>
+            <div className="py-1 font-medium text-gray-600">T3</div>
+            <div className="py-1 font-medium text-gray-600">T4</div>
+            <div className="py-1 font-medium text-gray-600">T5</div>
+            <div className="py-1 font-medium text-gray-600">T6</div>
+            <div className="py-1 font-medium text-gray-600">T7</div>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs">
+            {(() => {
+              const firstDayOfMonth = currentMonth.startOf("month")
+              const lastDayOfMonth = currentMonth.endOf("month")
+              const daysInMonth = lastDayOfMonth.date()
+              const startingDayOfWeek = firstDayOfMonth.day()
+              const days = []
 
-                  // Add empty cells for days before month starts
-                  for (let i = 0; i < startingDayOfWeek; i++) {
-                    days.push(<div key={`empty-${i}`} className="py-1 text-gray-400"></div>)
-                  }
+              // Add empty cells for days before month starts
+              for (let i = 0; i < startingDayOfWeek; i++) {
+                days.push(<div key={`empty-${i}`} className="py-1 text-gray-400"></div>)
+              }
 
-                  // Add days of month
-                  for (let day = 1; day <= daysInMonth; day++) {
-                    const currentDayDate = currentMonth.date(day).startOf("day")
-                    const currentDayDateStr = currentDayDate.format("YYYY-MM-DD")
-                    // Use getEventsForDate to get all events for this date (from allEvents, not filtered calendarEvents)
-                    const dayEvents = getEventsForDate(currentDayDate)
-                    const isToday = currentDayDate.isSame(dayjs(), "day")
+              // Add days of month
+              for (let day = 1; day <= daysInMonth; day++) {
+                const currentDayDate = currentMonth.date(day).startOf("day")
+                const currentDayDateStr = currentDayDate.format("YYYY-MM-DD")
+                // Use getEventsForDate to get all events for this date (from allEvents, not filtered calendarEvents)
+                const dayEvents = getEventsForDate(currentDayDate)
+                const isToday = currentDayDate.isSame(dayjs(), "day")
 
-                    // Count event types for this day
-                    const stocktakingCount = dayEvents.filter(e => e.type === "stocktaking").length
-                    const purchaseCount = dayEvents.filter(e => e.type === "purchase").length
-                    const salesCount = dayEvents.filter(e => e.type === "sales").length
+                // Count event types for this day
+                const stocktakingCount = dayEvents.filter(e => e.type === "stocktaking").length
+                const purchaseCount = dayEvents.filter(e => e.type === "purchase").length
+                const salesCount = dayEvents.filter(e => e.type === "sales").length
 
-                    days.push(
-                      <button
-                        key={day}
-                        type="button"
-                        tabIndex={0}
-                        aria-label={`Chọn ngày ${day} tháng ${currentMonth.month() + 1}`}
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          const clickedDate = currentMonth.date(day).startOf("day")
-                          // Update selectedDate to filter the list below
-                          setSelectedDate(clickedDate)
-                          // Optionally open modal (user can close it and still see filtered list)
-                          setTimeout(() => {
-                            setShowDateEventsModal(true)
-                          }, 0)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            const clickedDate = currentMonth.date(day).startOf("day")
-                            setSelectedDate(clickedDate)
-                            setTimeout(() => {
-                              setShowDateEventsModal(true)
-                            }, 0)
-                          }
-                        }}
-                        className={`py-1 px-1 relative w-full text-center rounded transition-colors border border-transparent touch-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${isToday ? "bg-orange-100 border-orange-200" : ""
-                          } ${dayEvents.length > 0
-                            ? "hover:bg-blue-50 hover:border-blue-200 cursor-pointer active:bg-blue-100"
-                            : "hover:bg-gray-50 hover:border-gray-200 cursor-pointer active:bg-gray-100"
-                          }`}
-                        style={{
-                          minHeight: "32px",
-                          userSelect: "none",
-                          WebkitUserSelect: "none",
-                          pointerEvents: "auto"
-                        }}
+                days.push(
+                  <button
+                    key={day}
+                    type="button"
+                    tabIndex={0}
+                    aria-label={`Chọn ngày ${day} tháng ${currentMonth.month() + 1}`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const clickedDate = currentMonth.date(day).startOf("day")
+                      // Update selectedDate to filter the list below
+                      setSelectedDate(clickedDate)
+                      // Optionally open modal (user can close it and still see filtered list)
+                      setTimeout(() => {
+                        setShowDateEventsModal(true)
+                      }, 0)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        const clickedDate = currentMonth.date(day).startOf("day")
+                        setSelectedDate(clickedDate)
+                        setTimeout(() => {
+                          setShowDateEventsModal(true)
+                        }, 0)
+                      }
+                    }}
+                    className={`py-1 px-1 relative w-full text-center rounded transition-colors border border-transparent touch-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${isToday ? "bg-orange-100 border-orange-200" : ""
+                      } ${dayEvents.length > 0
+                        ? "hover:bg-blue-50 hover:border-blue-200 cursor-pointer active:bg-blue-100"
+                        : "hover:bg-gray-50 hover:border-gray-200 cursor-pointer active:bg-gray-100"
+                      }`}
+                    style={{
+                      minHeight: "32px",
+                      userSelect: "none",
+                      WebkitUserSelect: "none",
+                      pointerEvents: "auto"
+                    }}
+                  >
+                    <span className={isToday ? "font-bold text-orange-600" : "text-slate-700"}>{day}</span>
+                    {dayEvents.length > 0 && (
+                      <div
+                        className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-0.5 pointer-events-none z-10"
                       >
-                        <span className={isToday ? "font-bold text-orange-600" : "text-slate-700"}>{day}</span>
-                        {dayEvents.length > 0 && (
-                          <div
-                            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-0.5 pointer-events-none z-10"
-                          >
-                            {stocktakingCount > 0 && (
-                              <span className="w-1 h-1 bg-orange-500 rounded-full" title={`${stocktakingCount} kiểm kê`}></span>
-                            )}
-                            {purchaseCount > 0 && (
-                              <span className="w-1 h-1 bg-blue-500 rounded-full" title={`${purchaseCount} nhập`}></span>
-                            )}
-                            {salesCount > 0 && (
-                              <span className="w-1 h-1 bg-green-500 rounded-full" title={`${salesCount} xuất`}></span>
-                            )}
-                          </div>
+                        {stocktakingCount > 0 && (
+                          <span className="w-1 h-1 bg-orange-500 rounded-full" title={`${stocktakingCount} kiểm kê`}></span>
                         )}
-                      </button>
-                    )
-                  }
+                        {purchaseCount > 0 && (
+                          <span className="w-1 h-1 bg-blue-500 rounded-full" title={`${purchaseCount} nhập`}></span>
+                        )}
+                        {salesCount > 0 && (
+                          <span className="w-1 h-1 bg-green-500 rounded-full" title={`${salesCount} xuất`}></span>
+                        )}
+                      </div>
+                    )}
+                  </button>
+                )
+              }
 
-                  return days
-                })()}
-              </div>
-            </>
-          )}
+              return days
+            })()}
+          </div>
 
           {/* Legend */}
           <div className="mt-4 flex items-center justify-center gap-4 text-xs">
@@ -807,11 +676,11 @@ export default function WarehouseEventCalendar() {
               })()}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </CardContent >
+      </Card >
 
       {/* Date Events Modal */}
-      <Dialog open={showDateEventsModal} onOpenChange={setShowDateEventsModal}>
+      < Dialog open={showDateEventsModal} onOpenChange={setShowDateEventsModal} >
         <DialogContent className="sm:max-w-[500px]" key={selectedDate ? selectedDate.format("YYYY-MM-DD") : "no-date"}>
           <DialogHeader>
             <DialogTitle>
@@ -890,7 +759,7 @@ export default function WarehouseEventCalendar() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog >
     </>
   )
 }
