@@ -326,6 +326,36 @@ function CreateSaleOrder({
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+
+        // Clear or update validation errors in real-time when the user edits the field
+        setFieldErrors(prevErrors => {
+            const newErrors = { ...prevErrors };
+
+            if (field === "retailerName") {
+                if (value) {
+                    delete newErrors.retailerName;
+                }
+            }
+
+            if (field === "estimatedTimeDeparture") {
+                if (!value) {
+                    newErrors.estimatedTimeDeparture = "Vui lòng chọn ngày dự kiến giao hàng";
+                } else {
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    selectedDate.setHours(0, 0, 0, 0);
+
+                    if (selectedDate < today) {
+                        newErrors.estimatedTimeDeparture = "Ngày giao hàng không thể trong quá khứ";
+                    } else {
+                        delete newErrors.estimatedTimeDeparture;
+                    }
+                }
+            }
+
+            return newErrors;
+        });
     }
 
     const loadGoodsPacking = async (goodsId) => {
