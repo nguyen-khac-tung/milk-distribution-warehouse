@@ -603,7 +603,7 @@ namespace MilkDistributionWarehouse.Services
             {
                 category.Status = CommonStatus.Active;
                 if (await _categoryRepository.UpdateCategory(category) == null)
-                    return "Không thể kích hoạt danh mục liên kết với hàng hoá.".ToMessageForUser();
+                    return "Không thể kích hoạt phân loại liên kết với hàng hoá.".ToMessageForUser();
             }
 
             var unitMeasure = await _goodRepository.GetInactiveUnitMeasureByGoodsIdAsync(goodsId);
@@ -611,7 +611,7 @@ namespace MilkDistributionWarehouse.Services
             {
                 unitMeasure.Status = CommonStatus.Active;
                 if (await _unitMeasureRepository.UpdateUnitMeasure(unitMeasure) == null)
-                    return "Không thể kích hoạt đơn vị đo liên kết với hàng hoá.".ToMessageForUser();
+                    return "Không thể kích hoạt đơn vị liên kết với hàng hoá.".ToMessageForUser();
             }
 
             var storageCondition = await _goodRepository.GetInactiveStorageConditionByGoodsIdAsync(goodsId);
@@ -641,7 +641,7 @@ namespace MilkDistributionWarehouse.Services
             if (!isActiveSupplier) return "Nhà cung cấp không tồn tại hoặc đã bị vô hiệu hoá.";
 
             var isActiveCategory = await _categoryRepository.IsActiveCategory(goodsCreate.CategoryId);
-            if (!isActiveCategory) return "Danh mục không tồn tại hoặc đã bị vô hiệu hoá.";
+            if (!isActiveCategory) return "Phân loại không tồn tại hoặc đã bị vô hiệu hoá.";
 
             var isActiveStorageCondition = await _storageConditionRepository.IsActiveStorageCondition(goodsCreate.StorageConditionId);
             if (!isActiveStorageCondition) return "Điều kiện bảo quản không tồn tại hoặc đã bị vô hiệu hoá.";

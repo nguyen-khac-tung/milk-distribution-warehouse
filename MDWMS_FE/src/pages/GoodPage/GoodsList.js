@@ -765,7 +765,7 @@ export default function GoodsPage() {
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
-                        Danh mục
+                        Phân loại
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("companyName")}>

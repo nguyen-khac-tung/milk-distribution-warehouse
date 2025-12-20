@@ -157,7 +157,7 @@ const SearchBar = () => {
     // Product Management
     {
       id: "categories",
-      title: "Quản lý danh mục",
+      title: "Quản lý phân loại",
       description: "Phân loại hàng hóa",
       icon: Tag,
       path: "/categories",
@@ -167,7 +167,7 @@ const SearchBar = () => {
     {
       id: "unitMeasures",
       title: "Quản lý đơn vị",
-      description: "Quản lý đơn vị đo lường",
+      description: "Quản lý đơn vị",
       icon: Scale,
       path: "/unit-measures",
       category: "QUẢN LÝ HÀNG HÓA",

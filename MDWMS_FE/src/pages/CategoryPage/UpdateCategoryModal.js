@@ -32,7 +32,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
     e.preventDefault()
 
     if (!categoryData || !categoryData.categoryId) {
-      window.showToast("Không tìm thấy thông tin danh mục", "error")
+      window.showToast("Không tìm thấy thông tin phân loại", "error")
       return
     }
 
@@ -40,7 +40,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
     const errors = {}
 
     if (!formData.categoryName || formData.categoryName.trim() === "") {
-      errors.categoryName = "Vui lòng nhập tên danh mục"
+      errors.categoryName = "Vui lòng nhập tên phân loại"
     }
 
     if (Object.keys(errors).length > 0) {
@@ -61,12 +61,12 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
       }
 
       const response = await updateCategory(updateData)
-      window.showToast("Cập nhật danh mục thành công!", "success")
+      window.showToast("Cập nhật phân loại thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
       console.error("Error updating category:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật danh mục")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật phân loại")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     } finally {
       setLoading(false)
@@ -89,7 +89,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Cập nhật danh mục</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Cập nhật phân loại</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -106,11 +106,11 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
               {/* Category Name */}
               <div className="space-y-2">
                 <Label htmlFor="categoryName" className="text-sm font-medium text-slate-700">
-                  Tên danh mục <span className="text-red-500">*</span>
+                  Tên phân loại <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="categoryName"
-                  placeholder="Nhập tên danh mục..."
+                  placeholder="Nhập tên phân loại..."
                   value={formData.categoryName}
                   onChange={(e) => {
                     setFormData({ ...formData, categoryName: e.target.value })
@@ -130,7 +130,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
                 </Label>
                 <Textarea
                   id="description"
-                  placeholder="Nhập mô tả danh mục..."
+                  placeholder="Nhập mô tả phân loại..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="min-h-[100px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"

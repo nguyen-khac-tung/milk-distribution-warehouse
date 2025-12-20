@@ -35,7 +35,7 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
     const errors = {}
 
     if (!formData.categoryName || formData.categoryName.trim() === "") {
-      errors.categoryName = "Vui lòng nhập tên danh mục"
+      errors.categoryName = "Vui lòng nhập tên phân loại"
     }
 
     if (Object.keys(errors).length > 0) {
@@ -50,7 +50,7 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const response = await createCategory(formData)
       console.log("Category created:", response)
-      window.showToast("Thêm danh mục thành công!", "success")
+      window.showToast("Thêm phân loại thành công!", "success")
       // Reset form data after successful creation
       setFormData({
         categoryName: "",
@@ -61,7 +61,7 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
       onClose && onClose()
     } catch (error) {
       console.error("Error creating category:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi thêm danh mục")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi thêm phân loại")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     } finally {
       setLoading(false)
@@ -84,7 +84,7 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Thêm danh mục mới</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Thêm phân loại mới</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -101,11 +101,11 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
               {/* Category Name */}
               <div className="space-y-2">
                 <Label htmlFor="categoryName" className="text-sm font-medium text-slate-700">
-                  Tên danh mục <span className="text-red-500">*</span>
+                  Tên phân loại <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="categoryName"
-                  placeholder="Nhập tên danh mục..."
+                  placeholder="Nhập tên phân loại..."
                   value={formData.categoryName}
                   onChange={(e) => {
                     setFormData({ ...formData, categoryName: e.target.value })
@@ -125,7 +125,7 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
                 </Label>
                 <Textarea
                   id="description"
-                  placeholder="Nhập mô tả danh mục..."
+                  placeholder="Nhập mô tả phân loại..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="min-h-[100px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"

@@ -620,7 +620,7 @@ const AreaLists = () => {
                                                                     onStatusChange={handleStatusChange}
                                                                     supplierId={area?.areaId}
                                                                     supplierName={area?.areaName}
-                                                                    entityType="danh mục"
+                                                                    entityType="phân loại"
                                                                 />
                                                             </PermissionWrapper>
                                                         </div>

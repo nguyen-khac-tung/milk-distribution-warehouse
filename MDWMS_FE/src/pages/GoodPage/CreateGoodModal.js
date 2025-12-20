@@ -130,7 +130,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
     }
 
     if (!formData.categoryId || formData.categoryId === "") {
-      errors.categoryId = "Vui lòng chọn danh mục"
+      errors.categoryId = "Vui lòng chọn phân loại"
     }
 
     if (!formData.supplierId || formData.supplierId === "") {
@@ -142,7 +142,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
     }
 
     if (!formData.unitMeasureId || formData.unitMeasureId === "") {
-      errors.unitMeasureId = "Vui lòng chọn đơn vị đo"
+      errors.unitMeasureId = "Vui lòng chọn đơn vị"
     }
 
     // Validate goodsPackingCreates
@@ -295,7 +295,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="categoryId" className="text-sm font-medium text-slate-700">
-                  Danh mục <span className="text-red-500">*</span>
+                  Phân loại <span className="text-red-500">*</span>
                 </Label>
                 <FloatingDropdown
                   value={formData.categoryId ? formData.categoryId.toString() : null}
@@ -309,7 +309,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                     value: category.categoryId.toString(),
                     label: category.categoryName,
                   }))}
-                  placeholder="Chọn danh mục..."
+                  placeholder="Chọn phân loại..."
                   loading={loadingData}
                 />
                 {validationErrors.categoryId && (
@@ -373,7 +373,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
 
               <div className="space-y-2">
                 <Label htmlFor="unitMeasureId" className="text-sm font-medium text-slate-700">
-                  Đơn vị đo <span className="text-red-500">*</span>
+                  Đơn vị<span className="text-red-500">*</span>
                 </Label>
                 <FloatingDropdown
                   value={formData.unitMeasureId ? formData.unitMeasureId.toString() : null}
@@ -387,7 +387,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                     value: unit.unitMeasureId.toString(),
                     label: unit.name,
                   }))}
-                  placeholder="Chọn đơn vị đo..."
+                  placeholder="Chọn đơn vị..."
                   loading={loadingData}
                 />
                 {validationErrors.unitMeasureId && (
@@ -408,7 +408,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                   className="h-8 px-3 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg flex items-center gap-1"
                 >
                   <Plus className="h-4 w-4" />
-                  Thêm đóng gói
+                  Thêm quy cách đóng gói
                 </Button>
               </div>
 
@@ -418,7 +418,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                     <div key={index} className="flex items-end gap-2">
                       <div className="flex-1 space-y-2">
                         <Label className="text-sm font-medium text-slate-600">
-                          Số {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} trên 1 thùng
+                          Số {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} trong 1 thùng
                         </Label>
                         <Input
                           type="number"

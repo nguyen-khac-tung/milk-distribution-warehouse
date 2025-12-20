@@ -111,7 +111,7 @@ const Reports = () => {
             key: "name",
         },
         {
-            title: "Danh mục",
+            title: "Phân loại",
             dataIndex: "category",
             key: "category",
         },

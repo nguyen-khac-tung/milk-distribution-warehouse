@@ -33,7 +33,7 @@ const CONNECTION_META = {
     },
 };
 
-// Meta danh mục thông báo — giữ nguyên
+// Meta phân loại thông báo — giữ nguyên
 const CATEGORY_META = {
     [NotificationCategory.IMPORTANT]: {
         dot: "bg-rose-500",

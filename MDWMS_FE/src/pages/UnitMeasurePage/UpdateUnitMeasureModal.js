@@ -32,7 +32,7 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
     e.preventDefault()
 
     if (!unitMeasureData || !unitMeasureData.unitMeasureId) {
-      window.showToast("Không tìm thấy thông tin đơn vị đo", "error")
+      window.showToast("Không tìm thấy thông tin đơn vị", "error")
       return
     }
 
@@ -40,7 +40,7 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
     const errors = {}
 
     if (!formData.name || formData.name.trim() === "") {
-      errors.name = "Vui lòng nhập tên đơn vị đo"
+      errors.name = "Vui lòng nhập tên đơn vị"
     }
 
     if (Object.keys(errors).length > 0) {
@@ -62,12 +62,12 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
       }
 
       const response = await updateUnitMeasure(updateData)
-      window.showToast("Cập nhật đơn vị đo thành công!", "success")
+      window.showToast("Cập nhật đơn vị thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
       console.error("Error updating unit measure:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn vị đo")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn vị")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     } finally {
       setLoading(false)
@@ -90,7 +90,7 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Cập nhật đơn vị đo</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Cập nhật đơn vị</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -107,11 +107,11 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
               {/* Row 1: Name */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium text-slate-700">
-                  Tên đơn vị đo <span className="text-red-500">*</span>
+                  Tên đơn vị <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Nhập tên đơn vị đo..."
+                  placeholder="Nhập tên đơn vị..."
                   value={formData.name}
                   onChange={(e) => {
                     setFormData({ ...formData, name: e.target.value })
@@ -131,7 +131,7 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
                 </Label>
                 <Textarea
                   id="description"
-                  placeholder="Nhập mô tả đơn vị đo..."
+                  placeholder="Nhập mô tả đơn vị..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="min-h-[80px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"

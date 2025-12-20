@@ -3,12 +3,12 @@
  * Tái sử dụng logic validation cho category trong CreateCategory và UpdateCategory
  */
 
-// Regex để kiểm tra tên danh mục hợp lệ (chữ cái, số, khoảng trắng, ký tự tiếng Việt)
+// Regex để kiểm tra tên phân loại hợp lệ (chữ cái, số, khoảng trắng, ký tự tiếng Việt)
 const VALID_NAME_REGEX = /^[a-zA-Z0-9\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]+$/
 
 /**
  * Validate category name
- * @param {string} categoryName - Tên danh mục cần validate
+ * @param {string} categoryName - Tên phân loại cần validate
  * @returns {Object} - { isValid: boolean, message: string }
  */
 export const validateCategoryName = (categoryName) => {
@@ -18,7 +18,7 @@ export const validateCategoryName = (categoryName) => {
   if (trimmedName.length < 2) {
     return {
       isValid: false,
-      message: "Tên danh mục phải có ít nhất 2 ký tự"
+      message: "Tên phân loại phải có ít nhất 2 ký tự"
     }
   }
 
@@ -26,7 +26,7 @@ export const validateCategoryName = (categoryName) => {
   if (!VALID_NAME_REGEX.test(trimmedName)) {
     return {
       isValid: false,
-      message: "Tên danh mục chỉ được chứa chữ cái, số và khoảng trắng"
+      message: "Tên phân loại chỉ được chứa chữ cái, số và khoảng trắng"
     }
   }
 
@@ -39,20 +39,20 @@ export const validateCategoryName = (categoryName) => {
 /**
  * Validate category form data
  * @param {Object} formData - Dữ liệu form cần validate
- * @param {string} formData.categoryName - Tên danh mục
+ * @param {string} formData.categoryName - Tên phân loại
  * @param {string} formData.description - Mô tả
  * @returns {Object} - { isValid: boolean, message: string }
  */
 export const validateCategoryForm = (formData) => {
-  // Kiểm tra trường bắt buộc (chỉ tên danh mục)
+  // Kiểm tra trường bắt buộc (chỉ tên phân loại)
   if (!formData.categoryName?.trim()) {
     return {
       isValid: false,
-      message: "Tên danh mục là bắt buộc"
+      message: "Tên phân loại là bắt buộc"
     }
   }
 
-  // Validate tên danh mục
+  // Validate tên phân loại
   const nameValidation = validateCategoryName(formData.categoryName)
   if (!nameValidation.isValid) {
     return nameValidation
@@ -80,7 +80,7 @@ export const validateUnitMeasureForm = (formData) => {
     }
   }
 
-  // Validate tên đơn vị đo
+  // Validate tên đơn vị
   const nameValidation = validateCategoryName(formData.name)
   if (!nameValidation.isValid) {
     return nameValidation

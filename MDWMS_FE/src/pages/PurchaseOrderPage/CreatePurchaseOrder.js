@@ -384,13 +384,10 @@ export default function CreatePurchaseOrder({
             }
         }
 
-        return [
-            { value: "", label: "Chọn đóng gói..." },
-            ...availablePackings.map(packing => ({
-                value: packing.goodsPackingId.toString(),
-                label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
-            }))
-        ];
+        return availablePackings.map(packing => ({
+            value: packing.goodsPackingId.toString(),
+            label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
+        }));
     };
 
 
@@ -717,113 +714,149 @@ export default function CreatePurchaseOrder({
                             </div>
 
                             <div className="rounded-lg border border-gray-200 bg-white" style={{ overflow: 'visible' }}>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="border-b border-gray-200 hover:bg-transparent">
-                                            <TableHead className="text-slate-600 font-semibold">STT</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Quy Cách Đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Lượng Thùng</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
-                                            {items.length > 1 && (
-                                                <TableHead className="text-right text-slate-600 font-semibold">Hành Động</TableHead>
-                                            )}
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {items.map((item, index) => (
-                                            <TableRow key={item.id} className="border-b border-gray-200 hover:bg-gray-50 py-4">
-                                                <TableCell className="text-slate-700">{index + 1}</TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div>
-                                                        <FloatingDropdown
-                                                            value={item.goodsName || undefined}
-                                                            onChange={(value) => updateItem(item.id, "goodsName", value)}
-                                                            options={getAvailableGoodsOptions(item.id)}
-                                                            placeholder={formData.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
-                                                            loading={goodsLoading}
-                                                            disabled={!formData.supplierName}
-                                                        />
-                                                        {fieldErrors[`${item.id}-goodsName`] && (
-                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsName`]}</p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div>
-                                                        <FloatingDropdown
-                                                            value={item.goodsPackingId || undefined}
-                                                            onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
-                                                            options={getGoodsPackingOptions(item.id)}
-                                                            placeholder={item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"}
-                                                            loading={packingLoading}
-                                                            disabled={!item.goodsName}
-                                                        />
-                                                        {fieldErrors[`${item.id}-goodsPackingId`] && (
-                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsPackingId`]}</p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div>
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="0"
-                                                            value={item.quantity}
-                                                            onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
-                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
-                                                        />
-                                                        {fieldErrors[`${item.id}-quantity`] && (
-                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-quantity`]}</p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
-                                                        {(() => {
-                                                            const totalUnits = calculateTotalUnits(item);
-                                                            if (totalUnits === 0) return "0";
-                                                            return totalUnits.toString();
-                                                        })()}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600">
-                                                        {(() => {
-                                                            if (item.goodsName) {
-                                                                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                                                                return selectedGood ? selectedGood.name : "Trống";
-                                                            }
-                                                            return "Trống";
-                                                        })()}
-                                                    </div>
-                                                </TableCell>
+                                <div className="overflow-x-auto w-full">
+                                    <Table className="min-w-[1000px]">
+                                        <TableHeader>
+                                            <TableRow className="border-b border-gray-200 hover:bg-transparent">
+                                                <TableHead className="text-slate-600 font-semibold w-[4%]">STT</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[22%]">Tên Hàng Hóa</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[16%]">Quy Cách Đóng Gói</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[130px]">Số Lượng Thùng</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[130px]">Tổng Số Đơn Vị</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[100px]">Đơn Vị</TableHead>
                                                 {items.length > 1 && (
-                                                    <TableCell className="text-right">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeItem(item.id)}
-                                                            className="text-red-600 hover:bg-red-50"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
+                                                    <TableHead className="text-center text-slate-600 font-semibold w-[10%]">
+                                                        Hành Động
+                                                    </TableHead>
                                                 )}
                                             </TableRow>
-                                        ))}
-                                        <TableRow className="border-b border-gray-200">
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {items.map((item, index) => (
+                                                <TableRow key={item.id} className="border-b min-h-[70px] border-gray-200 hover:bg-gray-50">
+                                                    <TableCell className="text-center text-slate-700 align-top pb-6">{index + 1}</TableCell>
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[200px] max-w-[300px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.goodsName || undefined}
+                                                                onChange={(value) => updateItem(item.id, "goodsName", value)}
+                                                                options={getAvailableGoodsOptions(item.id)}
+                                                                placeholder={formData.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
+                                                                loading={goodsLoading}
+                                                                disabled={!formData.supplierName}
+                                                                className={`truncate w-full ${fieldErrors[`${item.id}-goodsName`] ? 'border-red-500' : ''}`}
+                                                                title={item.goodsName || ""}
+                                                                data-key={`${item.id}-goodsName`}
+                                                            />
+                                                            {fieldErrors[`${item.id}-goodsName`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-goodsName`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[150px] max-w-[140px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.goodsPackingId || undefined}
+                                                                onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
+                                                                options={(() => {
+                                                                    const packingOptions = getGoodsPackingOptions(item.id);
+                                                                    return packingOptions;
+                                                                })()}
+                                                                placeholder={item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"}
+                                                                loading={packingLoading}
+                                                                disabled={!item.goodsName}
+                                                                className={`truncate w-full ${fieldErrors[`${item.id}-goodsPackingId`] ? 'border-red-500' : ''}`}
+                                                                title={(() => {
+                                                                    if (!item.goodsPackingId) return "";
+                                                                    const packingOptions = getGoodsPackingOptions(item.id);
+                                                                    const selectedOption = packingOptions.find(opt => opt.value === item.goodsPackingId.toString());
+                                                                    return selectedOption ? selectedOption.label : "";
+                                                                })()}
+                                                                data-key={`${item.id}-goodsPackingId`}
+                                                            />
+                                                            {fieldErrors[`${item.id}-goodsPackingId`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-goodsPackingId`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="w-[130px] relative align-top pb-6">
+                                                        <div className="relative">
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="0"
+                                                                min="0"
+                                                                value={item.quantity === "" ? "" : item.quantity}
+                                                                onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
+                                                                data-key={`${item.id}-quantity`}
+                                                                className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""}`}
+                                                            />
+                                                            {fieldErrors[`${item.id}-quantity`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
+                                                                    {fieldErrors[`${item.id}-quantity`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="w-[130px] text-center align-top pb-6">
+                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
+                                                            {calculateTotalUnits(item) || "0"}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="w-[80px] text-center align-top pb-6">
+                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-sm">
+                                                            {(() => {
+                                                                if (item.goodsName) {
+                                                                    const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                                                                    return selectedGood ? selectedGood.name : "Trống";
+                                                                }
+                                                                return "Trống";
+                                                            })()}
+                                                        </div>
+                                                    </TableCell>
+                                                    {items.length > 1 && (
+                                                        <TableCell className="text-center align-top pb-6">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => removeItem(item.id)}
+                                                                className="text-red-600 hover:bg-red-50"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    )}
+                                                </TableRow>
+                                            ))}
+
+                                            {/* Hàng trống cuối cùng */}
+                                            <TableRow className="border-b border-gray-200">
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
 
                             {/* Add Item Text - Centered below table */}
