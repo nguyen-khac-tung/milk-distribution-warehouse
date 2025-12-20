@@ -273,7 +273,7 @@ export default function UnitMeasuresPage() {
   const handleDeleteConfirm = async () => {
     try {
       await deleteUnitMeasure(itemToDelete?.unitMeasureId)
-      window.showToast(`Đã xóa đơn vị đo: ${itemToDelete?.name || ''}`, "success")
+      window.showToast(`Đã xóa đơn vị: ${itemToDelete?.name || ''}`, "success")
       setShowDeleteModal(false)
       setItemToDelete(null)
 
@@ -302,7 +302,7 @@ export default function UnitMeasuresPage() {
       })
     } catch (error) {
       console.error("Error deleting unit measure:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi xóa đơn vị đo")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi xóa đơn vị")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     }
   }
@@ -387,7 +387,7 @@ export default function UnitMeasuresPage() {
       })
 
       // Show success message
-      window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} đơn vị đo: ${unitMeasureName}`, "success")
+      window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} đơn vị: ${unitMeasureName}`, "success")
 
       // Refresh data
       fetchData({
@@ -403,7 +403,7 @@ export default function UnitMeasuresPage() {
       fetchTotalStats()
     } catch (error) {
       console.error("Error updating unit measure status:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái đơn vị đo")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái đơn vị")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     }
   }
@@ -414,15 +414,15 @@ export default function UnitMeasuresPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn vị đo</h1>
-            <p className="text-slate-600 mt-1">Quản lý các đơn vị đo hàng hóa trong hệ thống</p>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn vị</h1>
+            <p className="text-slate-600 mt-1">Quản lý các đơn vị hàng hóa trong hệ thống</p>
           </div>
           <Button
             className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             onClick={() => setShowCreateModal(true)}
           >
             <Plus className="mr-2 h-4 w-4 text-white" />
-            Thêm đơn vị đo
+            Thêm đơn vị
           </Button>
         </div>
 
@@ -431,7 +431,7 @@ export default function UnitMeasuresPage() {
           totalCount={totalStats.totalCount}
           activeCount={totalStats.activeCount}
           inactiveCount={totalStats.inactiveCount}
-          totalLabel="Tổng đơn vị đo"
+          totalLabel="Tổng đơn vị"
           activeLabel="Đang hoạt động"
           inactiveLabel="Không hoạt động"
         />
@@ -441,7 +441,7 @@ export default function UnitMeasuresPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên hoặc mô tả đơn vị đo..."
+            searchPlaceholder="Tìm kiếm theo tên hoặc mô tả đơn vị..."
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -480,7 +480,7 @@ export default function UnitMeasuresPage() {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("name")}>
-                          <span>Tên đơn vị đo</span>
+                          <span>Tên đơn vị</span>
                           {sortField === "name" ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -522,7 +522,7 @@ export default function UnitMeasuresPage() {
                                 onStatusChange={handleStatusChange}
                                 unitMeasureId={unitMeasure?.unitMeasureId}
                                 unitMeasureName={unitMeasure?.name}
-                                entityType="đơn vị đo"
+                                entityType="đơn vị"
                               />
                             </div>
                           </TableCell>
@@ -549,11 +549,11 @@ export default function UnitMeasuresPage() {
                     ) : (
                       <EmptyState
                         icon={Ruler}
-                        title="Không tìm thấy đơn vị đo nào"
+                        title="Không tìm thấy đơn vị nào"
                         description={
                           searchQuery || statusFilter
                             ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                            : "Chưa có đơn vị đo nào trong hệ thống"
+                            : "Chưa có đơn vị nào trong hệ thống"
                         }
                         actionText="Xóa bộ lọc"
                         onAction={clearAllFilters}
@@ -574,7 +574,7 @@ export default function UnitMeasuresPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-600">
-                  Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} đơn vị đo
+                  Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} đơn vị
                 </div>
 
                 <div className="flex items-center space-x-4">

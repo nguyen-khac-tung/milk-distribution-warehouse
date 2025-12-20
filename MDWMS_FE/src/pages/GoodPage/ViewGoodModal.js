@@ -59,7 +59,7 @@ export function ProductDetail({ product, onClose }) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
-                  <InfoRow icon={<ComponentIcon name="box" size={16} color="#6b7280" />} label="Đơn vị đo" value={product.unitMeasureName || 'N/A'} />
+                  <InfoRow icon={<ComponentIcon name="box" size={16} color="#6b7280" />} label="Đơn vị" value={product.unitMeasureName || 'N/A'} />
                   <InfoRow icon={<ComponentIcon name="category" size={16} color="#6b7280" />} label="Danh mục" value={product.categoryName || 'N/A'} />
                   <InfoRow icon={<ComponentIcon name="tag" size={16} color="#6b7280" />} label="Thương hiệu" value={product.brandName || 'N/A'} />
                 </div>

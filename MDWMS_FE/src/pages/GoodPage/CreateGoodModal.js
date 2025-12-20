@@ -142,7 +142,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
     }
 
     if (!formData.unitMeasureId || formData.unitMeasureId === "") {
-      errors.unitMeasureId = "Vui lòng chọn đơn vị đo"
+      errors.unitMeasureId = "Vui lòng chọn đơn vị"
     }
 
     // Validate goodsPackingCreates
@@ -373,7 +373,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
 
               <div className="space-y-2">
                 <Label htmlFor="unitMeasureId" className="text-sm font-medium text-slate-700">
-                  Đơn vị đo <span className="text-red-500">*</span>
+                  Đơn vị<span className="text-red-500">*</span>
                 </Label>
                 <FloatingDropdown
                   value={formData.unitMeasureId ? formData.unitMeasureId.toString() : null}
@@ -387,7 +387,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                     value: unit.unitMeasureId.toString(),
                     label: unit.name,
                   }))}
-                  placeholder="Chọn đơn vị đo..."
+                  placeholder="Chọn đơn vị..."
                   loading={loadingData}
                 />
                 {validationErrors.unitMeasureId && (

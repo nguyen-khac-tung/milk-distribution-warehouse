@@ -246,7 +246,7 @@ export default function CategoriesPage() {
   const handleDeleteConfirm = async () => {
     try {
       await deleteCategory(itemToDelete?.categoryId)
-      window.showToast(`Đã xóa danh mục: ${itemToDelete?.categoryName || ''}`, "success")
+      window.showToast(`Đã xóa phân loại: ${itemToDelete?.categoryName || ''}`, "success")
       setShowDeleteModal(false)
       setItemToDelete(null)
 
@@ -275,7 +275,7 @@ export default function CategoriesPage() {
       })
     } catch (error) {
       console.error("Error deleting category:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi xóa danh mục")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi xóa phân loại")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     }
   }
@@ -360,7 +360,7 @@ export default function CategoriesPage() {
       })
 
       // Show success message
-      window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} danh mục: ${categoryName}`, "success")
+      window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} phân loại: ${categoryName}`, "success")
 
       // Refresh data
       fetchData({
@@ -376,7 +376,7 @@ export default function CategoriesPage() {
       fetchTotalStats()
     } catch (error) {
       console.error("Error updating category status:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái danh mục")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái phân loại")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     }
   }
@@ -387,15 +387,15 @@ export default function CategoriesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Quản lý Danh mục</h1>
-            <p className="text-slate-600 mt-1">Quản lý các danh mục hàng hóa trong hệ thống</p>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý phân loại</h1>
+            <p className="text-slate-600 mt-1">Quản lý các phân loại hàng hóa trong hệ thống</p>
           </div>
           <Button
             className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             onClick={() => setShowCreateModal(true)}
           >
             <Plus className="mr-2 h-4 w-4 text-white" />
-            Thêm danh mục
+            Thêm phân loại
           </Button>
         </div>
 
@@ -404,7 +404,7 @@ export default function CategoriesPage() {
           totalCount={totalStats.totalCount}
           activeCount={totalStats.activeCount}
           inactiveCount={totalStats.inactiveCount}
-          totalLabel="Tổng danh mục"
+          totalLabel="Tổng phân loại"
           activeLabel="Đang hoạt động"
           inactiveLabel="Không hoạt động"
         />
@@ -414,7 +414,7 @@ export default function CategoriesPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên hoặc mô tả danh mục..."
+            searchPlaceholder="Tìm kiếm theo tên hoặc mô tả phân loại..."
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -453,7 +453,7 @@ export default function CategoriesPage() {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("categoryName")}>
-                          <span>Tên danh mục</span>
+                          <span>Tên phân loại</span>
                           {sortField === "categoryName" ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -495,7 +495,7 @@ export default function CategoriesPage() {
                                 onStatusChange={handleStatusChange}
                                 supplierId={category?.categoryId}
                                 supplierName={category?.categoryName}
-                                entityType="danh mục"
+                                entityType="phân loại"
                               />
                             </div>
                           </TableCell>
@@ -522,11 +522,11 @@ export default function CategoriesPage() {
                     ) : (
                       <EmptyState
                         icon={Folder}
-                        title="Không tìm thấy danh mục nào"
+                        title="Không tìm thấy phân loại nào"
                         description={
                           searchQuery || statusFilter
                             ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                            : "Chưa có danh mục nào trong hệ thống"
+                            : "Chưa có phân loại nào trong hệ thống"
                         }
                         actionText="Xóa bộ lọc"
                         onAction={clearAllFilters}
@@ -547,7 +547,7 @@ export default function CategoriesPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-600">
-                  Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} danh mục
+                  Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} phân loại
                 </div>
 
                 <div className="flex items-center space-x-4">

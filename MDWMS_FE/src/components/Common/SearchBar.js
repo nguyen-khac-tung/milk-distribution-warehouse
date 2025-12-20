@@ -157,7 +157,7 @@ const SearchBar = () => {
     // Product Management
     {
       id: "categories",
-      title: "Quản lý danh mục",
+      title: "Quản lý phân loại",
       description: "Phân loại hàng hóa",
       icon: Tag,
       path: "/categories",

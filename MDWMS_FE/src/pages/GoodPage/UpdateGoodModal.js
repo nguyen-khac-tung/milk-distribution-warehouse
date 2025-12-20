@@ -246,7 +246,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     }
 
     if (!formData.unitMeasureId || formData.unitMeasureId === 0) {
-      errors.unitMeasureId = "Vui lòng chọn đơn vị đo"
+      errors.unitMeasureId = "Vui lòng chọn đơn vị"
     }
 
     if (hasPackingError || goodsPackingUpdates.length === 0) {
@@ -448,7 +448,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
 
               <div className="space-y-2">
                 <Label htmlFor="unitMeasureId" className="text-sm font-medium text-slate-700">
-                  Đơn vị đo <span className="text-red-500">*</span>
+                  Đơn vị<span className="text-red-500">*</span>
                 </Label>
                 <FloatingDropdown
                   value={formData.unitMeasureId ? formData.unitMeasureId.toString() : null}
@@ -465,7 +465,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                     value: unit.unitMeasureId.toString(),
                     label: unit.name,
                   }))}
-                  placeholder="Chọn đơn vị đo..."
+                  placeholder="Chọn đơn vị..."
                   loading={loadingData}
                   disabled={isDisable}
                 />
@@ -488,7 +488,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   className="h-8 px-3 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg flex items-center gap-1 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
-                  Thêm đóng gói
+                  Thêm quy cách đóng gói
                 </Button>
               </div>
 
@@ -498,7 +498,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                     <div key={index} className="flex items-end gap-2">
                       <div className="flex-1 space-y-2">
                         <Label className="text-sm font-medium text-slate-600">
-                          Số {unitMeasures.find(unit => unit.unitMeasureId === formData.unitMeasureId)?.name || 'đơn vị'} trên 1 thùng
+                          Số {unitMeasures.find(unit => unit.unitMeasureId === formData.unitMeasureId)?.name.toLowerCase() || 'đơn vị'} trong 1 thùng
                         </Label>
                         <Input
                           type="number"

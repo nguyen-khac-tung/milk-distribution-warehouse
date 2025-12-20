@@ -703,7 +703,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <Label htmlFor="defaultUnitMeasure" className="text-sm font-medium text-orange-700">
-                        Đơn vị đo mặc định
+                        Đơn vị mặc định
                       </Label>
                     </div>
                     <FloatingDropdown
@@ -719,7 +719,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         value: unit.unitMeasureId.toString(),
                         label: unit.name,
                       }))}
-                      placeholder="Chọn đơn vị đo mặc định..."
+                      placeholder="Chọn đơn vị mặc định..."
                       loading={loadingData}
                     />
                   </div>
@@ -932,7 +932,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Unit Measure */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Đơn vị đo <span className="text-red-500">*</span>
+                          Đơn vị<span className="text-red-500">*</span>
                         </Label>
                         <FloatingDropdown
                           value={goods.unitMeasureId ? goods.unitMeasureId.toString() : null}
@@ -942,7 +942,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             value: unit.unitMeasureId.toString(),
                             label: unit.name,
                           }))}
-                          placeholder="Chọn đơn vị đo..."
+                          placeholder="Chọn đơn vị..."
                           loading={loadingData}
                         />
                         {errors[`${index}-unitMeasureId`] && (

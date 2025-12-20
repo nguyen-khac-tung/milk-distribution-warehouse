@@ -193,7 +193,7 @@ const Sidebar = memo(({ collapsed, isMobile }) => {
             {
                 key: "/categories",
                 icon: <ComponentIcon name="category" size={16} collapsed={collapsed} />,
-                label: "Quản lý danh mục",
+                label: "Quản lý phân loại",
                 permission: PERMISSIONS.CATEGORY_VIEW
             },
             {

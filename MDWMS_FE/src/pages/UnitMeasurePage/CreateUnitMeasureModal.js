@@ -35,7 +35,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
     const errors = {}
 
     if (!formData.name || formData.name.trim() === "") {
-      errors.name = "Vui lòng nhập tên đơn vị đo"
+      errors.name = "Vui lòng nhập tên đơn vị"
     }
 
     if (Object.keys(errors).length > 0) {
@@ -49,7 +49,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
     try {
       setLoading(true)
       const response = await createUnitMeasure(formData)
-      window.showToast("Thêm đơn vị đo thành công!", "success")
+      window.showToast("Thêm đơn vị thành công!", "success")
       // Reset form data after successful creation
       setFormData({
         name: "",
@@ -60,7 +60,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
       onClose && onClose()
     } catch (error) {
       console.error("Error creating unit measure:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi thêm đơn vị đo")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi thêm đơn vị")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     } finally {
       setLoading(false)
@@ -83,7 +83,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Thêm đơn vị đo mới</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Thêm đơn vị mới</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -100,11 +100,11 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
               {/* Row 1: Name */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium text-slate-700">
-                  Tên đơn vị đo <span className="text-red-500">*</span>
+                  Tên đơn vị <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Nhập tên đơn vị đo..."
+                  placeholder="Nhập tên đơn vị..."
                   value={formData.name}
                   onChange={(e) => {
                     setFormData({ ...formData, name: e.target.value })
@@ -124,7 +124,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
                 </Label>
                 <Textarea
                   id="description"
-                  placeholder="Nhập mô tả đơn vị đo..."
+                  placeholder="Nhập mô tả đơn vị..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="min-h-[80px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"
