@@ -62,7 +62,7 @@ export function LoginForm() {
                         className="w-[100px] h-[100px] object-contain"
                     />
                     <span className="text-xl font-semibold text-foreground">
-                        HỆ THỐNG KHO PHÂN PHỐI SỮA
+                        HỆ THỐNG KHO SỮA HOÀNG HÀ
                     </span>
                 </div>
 

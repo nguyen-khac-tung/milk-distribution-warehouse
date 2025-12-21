@@ -585,7 +585,7 @@ const Sidebar = memo(({ collapsed, isMobile }) => {
                             />
                             <div>
                                 <div style={{ fontWeight: 700, fontSize: 16, color: "#1f2937", lineHeight: 1.2 }}>
-                                    Kho Phân Phối Sữa
+                                    Kho Sữa Hoàng Hà
                                 </div>
                             </div>
                         </div>
