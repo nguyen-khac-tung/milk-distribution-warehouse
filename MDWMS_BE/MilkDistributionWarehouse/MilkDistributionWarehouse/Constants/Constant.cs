@@ -288,7 +288,7 @@
     /// </summary>
     public static class WarehouseInformation
     {
-        public const string Name = "Kho Phân Phối Sữa";
-        public const string Address = "Hà Nội";
+        public const string Name = "Kho Sữa Hoàng Hà";
+        public const string Address = "";
     }
 }
